@@ -15,6 +15,7 @@
     const state = reactive({name:'zf',age:12,flag:true});
     
     effect(()=>{
+      console.log("ss")
       app.innerHTML = state.flag ? state.name : state.age;
     })
     setTimeout(()=>{

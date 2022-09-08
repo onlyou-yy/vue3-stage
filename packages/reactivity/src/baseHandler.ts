@@ -1,3 +1,5 @@
+import { isObject } from "@vue/shared";
+import { reactive } from "./reactive";
 import { track, trigger } from "./effect";
 
 /**代理标识 */
@@ -18,7 +20,15 @@ export const mutableHandlers = {
       return true;
     }
     track(target,"get",key);
-    return Reflect.get(target,key,receiver);
+
+    //如果获取的值是一个对象并且没有被代理过就进行代理返回
+    //不用在一开始的时候就递归代理对象，节约性能
+    let res = Reflect.get(target,key,receiver);
+    if(isObject(res)){
+      return reactive(res);
+    }
+
+    return res;
   },
   /**
    * @param target 就是目标 object

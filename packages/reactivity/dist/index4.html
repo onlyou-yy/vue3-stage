@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+  <script src="./reactivity.global.js"></script>
+  <script>
+    const {effect,reactive,computed} = VueReactivity;
+    const state = reactive({firstName:'jack',secondName:"simpson"});
+    // let fullName = computed({
+    //   get(){
+    //     return state.firstName + "·" + state.secondName;
+    //   },
+    //   set(newValue){
+    //     console.log(newValue);
+    //   }
+    // })
+    let fullName = computed(()=>{
+      return state.firstName + "·" + state.secondName;
+    })
+
+    fullName.value;
+    fullName.value;
+
+    effect(()=>{
+      app.innerHTML = fullName.value;
+    })
+
+    setTimeout(()=>{
+      state.firstName = "rocy";
+    },1000)
+
+    //计算属性中肯定要有一个缓存的表示，如果这个依赖有变化，要重新执行get，没有比那花就不重新执行get
+    //使用一个 dirty 来记录是否是脏的
+    //计算数学是一个effect，依赖饿属性变化了就会更新dirty的值
+  </script>
+</body>
+</html>

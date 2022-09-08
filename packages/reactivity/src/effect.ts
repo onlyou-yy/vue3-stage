@@ -16,7 +16,7 @@ function cleanupEffect(effect){
   deps.length = 0;
 }
 
-class ReactiveEffect{
+export class ReactiveEffect{
   public parent = null;//嵌套effect的父实例
   public active = true;//这个effect默认是激活状态（是否进行依赖收集）
   public deps = [];//依赖的属性
@@ -87,15 +87,25 @@ export function track(target,type,key){
   if(!dep){
     depsMap.set(key,(dep = new Set()));
   }
-  let shouldTrack = !dep.has(activeEffect);
-  if(shouldTrack){
-    dep.add(activeEffect);
-    //如果有 effect(()=>{ flag ? state.name : state.age })
-    //当flag由true切换到false的时候，那么 name 对应的那个 effect在name更新的时候就不需要再执行了
-    //在这个情况下我们需要将name所依赖的当前 effect 清除
-    //所以还要让 effect 也记录一下当前的属性所依赖的 effect
-    //之后就可以从 deps 中把 effect 自己移除掉
-    activeEffect.deps.push(dep);
+  trackEffects(dep);
+}
+
+/**
+ * 收集effect
+ * @param dep 
+ */
+export function trackEffects(dep){
+  if(activeEffect){
+    let shouldTrack = !dep.has(activeEffect);
+    if(shouldTrack){
+      dep.add(activeEffect);
+      //如果有 effect(()=>{ flag ? state.name : state.age })
+      //当flag由true切换到false的时候，那么 name 对应的那个 effect在name更新的时候就不需要再执行了
+      //在这个情况下我们需要将name所依赖的当前 effect 清除
+      //所以还要让 effect 也记录一下当前的属性所依赖的 effect
+      //之后就可以从 deps 中把 effect 自己移除掉
+      activeEffect.deps.push(dep);
+    }
   }
 }
 
@@ -112,22 +122,27 @@ export function trigger(target,type,key,value,oldValue){
   if(!depMap) return;
   let effects = depMap.get(key);
   if(effects){
-    //这里要先改变一下引用
-    //因为在 run 的时候会执行 cleanupEffect 从Set中删除数据
-    //然乎执行 fn 的时候又会对同一个 Set 添加数据，这样 effects 就会一直增减出现死循环
-    effects = new Set(effects);
-    effects.forEach(effect => {
-      //在执行的时候又执行自己，会造成无限调用，所以要屏蔽掉
-      // effect(()=>{state.age++});state.age++;
-      if(effect !== activeEffect){
-        if(effect.scheduler){
-          effect.scheduler();//用户自己的调度函数
-        }else{
-          effect.run();
-        }
-      }
-    })
+    triggerEffects(effects);
   }
+}
+
+/**触发effect */
+export function triggerEffects(effects){
+  //这里要先改变一下引用
+  //因为在 run 的时候会执行 cleanupEffect 从Set中删除数据
+  //然乎执行 fn 的时候又会对同一个 Set 添加数据，这样 effects 就会一直增减出现死循环
+  effects = new Set(effects);
+  effects.forEach(effect => {
+    //在执行的时候又执行自己，会造成无限调用，所以要屏蔽掉
+    // effect(()=>{state.age++});state.age++;
+    if(effect !== activeEffect){
+      if(effect.scheduler){
+        effect.scheduler();//用户自己的调度函数
+      }else{
+        effect.run();
+      }
+    }
+  })
 }
 
 

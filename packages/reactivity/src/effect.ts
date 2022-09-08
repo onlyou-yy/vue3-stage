@@ -2,7 +2,7 @@
 export let activeEffect:ReactiveEffect = undefined;
 
 /**
- * 
+ * 从 effect 的 deps 中移除自身
  * @param effect 
  */
 function cleanupEffect(effect){
@@ -18,9 +18,11 @@ function cleanupEffect(effect){
 
 class ReactiveEffect{
   public parent = null;//嵌套effect的父实例
-  public active = true;//这个effect默认是激活状态
+  public active = true;//这个effect默认是激活状态（是否进行依赖收集）
   public deps = [];//依赖的属性
-  constructor(public fn){}//public fn 是 this.fn = fn 见简写
+  //public fn 是 this.fn = fn 简写
+  constructor(public fn,public scheduler){}
+  /**运行effect的回调 */
   run(){
     //如果没有激活就只运行函数，不进行依赖收集
     if(!this.active) return this.fn();
@@ -42,14 +44,26 @@ class ReactiveEffect{
       this.parent = null;
     }
   }
+  /**停止依赖收集 */
+  stop(){
+    if(this.active){
+      this.active = false;
+      cleanupEffect(this);
+    }
+  }
 }
 
-export function effect(fn){
+export function effect(fn,options:any = {}){
   // 这里的 fn 可以根据状态变化 重新执行，effect可以嵌套着写
   
-  const _effect = new ReactiveEffect(fn);//创建响应式的 effect
+  const _effect = new ReactiveEffect(fn,options.scheduler);//创建响应式的 effect
 
   _effect.run();
+
+  //提供控件
+  const runner = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
 }
 
 /**依赖 */
@@ -105,7 +119,13 @@ export function trigger(target,type,key,value,oldValue){
     effects.forEach(effect => {
       //在执行的时候又执行自己，会造成无限调用，所以要屏蔽掉
       // effect(()=>{state.age++});state.age++;
-      if(effect !== activeEffect)  effect.run();
+      if(effect !== activeEffect){
+        if(effect.scheduler){
+          effect.scheduler();//用户自己的调度函数
+        }else{
+          effect.run();
+        }
+      }
     })
   }
 }

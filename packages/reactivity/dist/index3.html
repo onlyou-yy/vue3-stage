@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+  <script src="./reactivity.global.js"></script>
+  <script>
+    const {effect,reactive} = VueReactivity;
+    const state = reactive({name:'zf',age:12,flag:true});
+    
+    // const runner = effect(()=>{
+    //   app.innerHTML = state.name;
+    // })
+    // runner.effect.stop();
+    // setTimeout(()=>{
+    //   state.name = "jack";
+    //   setTimeout(()=>{
+    //     runner()
+    //   },1000)
+    // },1000)
+
+    //---------------------------------------------------
+    let waiting = false;
+    const runner2 = effect(()=>{
+      console.log("eff");
+      app.innerHTML = state.age;
+    },{
+      scheduler(){//调度，控制如何进行更新
+        console.log(state.age);
+        if(!waiting){
+          waiting = true;
+          setTimeout(()=>{
+            runner2();
+          },1000)
+        }
+      }
+    })
+    state.age = 1;
+    state.age = 2;
+    state.age = 3;
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import { track } from "./effect";
+import { track, trigger } from "./effect";
 
 /**代理标识 */
 export const enum  ReactiveFlags {

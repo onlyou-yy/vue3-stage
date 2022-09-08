@@ -1,6 +1,21 @@
 /**当前激活的 ReactiveEffect */
 export let activeEffect:ReactiveEffect = undefined;
 
+/**
+ * 
+ * @param effect 
+ */
+function cleanupEffect(effect){
+  let {deps} = effect;
+  //deps 中保存的是每个属性对应的全部 effect，[Set,Set]
+  //其中的 Set 是对 targetMap 中的数据的引用
+  for(let i = 0; i < deps.length; i++){
+    deps[i].delete(effect);
+  }
+  //之后还需要将 deps 清空掉，不然之后重新收集会重复
+  deps.length = 0;
+}
+
 class ReactiveEffect{
   public parent = null;//嵌套effect的父实例
   public active = true;//这个effect默认是激活状态
@@ -14,6 +29,11 @@ class ReactiveEffect{
       //这里就要依赖收集了，核心就是将当前的 effect 和 稍后渲染的属性关联在一起
       // 暂存当前实例
       activeEffect = this; 
+      
+      //在运行之前应该要从之前收集的 属性中的关联的effect中 把当前自己移除掉
+      //之后再重新搜集，这样就可以实现分支切换
+      cleanupEffect(this);
+
       //当稍后调用取值操作的时候就可以获取到这个全局的 activeEffect，就可以将属性和effect进行关联
       return this.fn();
     }finally{
@@ -77,11 +97,17 @@ export function trigger(target,type,key,value,oldValue){
   let depMap = targetMap.get(target);
   if(!depMap) return;
   let effects = depMap.get(key);
-  effects && effects.forEach(effect => {
-    //在执行的时候又执行自己，会造成无限调用，所以要屏蔽掉
-    // effect(()=>{state.age++});state.age++;
-    if(effect !== activeEffect)  effect.run();
-  })
+  if(effects){
+    //这里要先改变一下引用
+    //因为在 run 的时候会执行 cleanupEffect 从Set中删除数据
+    //然乎执行 fn 的时候又会对同一个 Set 添加数据，这样 effects 就会一直增减出现死循环
+    effects = new Set(effects);
+    effects.forEach(effect => {
+      //在执行的时候又执行自己，会造成无限调用，所以要屏蔽掉
+      // effect(()=>{state.age++});state.age++;
+      if(effect !== activeEffect)  effect.run();
+    })
+  }
 }
 
 

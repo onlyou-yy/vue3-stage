@@ -125,3 +125,9 @@ pnpm tsc --init
 ```js
 const args = require('minimist')(process.argv.slice(2));
 ```
+
+## Vue3 响应式原理
++ 先创建一个响应式对象 new Proxy()
++ 然后 effect 默认数据变化要更新。先将正在执行的 effect 作为全局变量，渲染取值，在get方法中进行依赖收集
++ 使用 WeakMap 的结构来保存属性对应的effect `{对象:{属性:new Set()}}`
++ 然后在用户数据改变的时候，会通过对象、属性来来查找对应的 effect 集合,然后全部执行

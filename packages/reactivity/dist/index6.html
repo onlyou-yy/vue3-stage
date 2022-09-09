@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+  <script src="./reactivity.global.js"></script>
+  <script>
+    const {effect,ref,reactive,toRefs} = VueReactivity;
+    const state = ref(0);//reactive 只能处理对象
+    //对于简单数据需要使用 ref,ref 会将这个简单数据包装成一个对象
+    //如果传入的是一个对象就会调用 reactive 进行转化
+
+    const user = reactive({name:"jack",age:12})
+
+    let {name} = toRefs(user);
+
+    effect(()=>{
+      app.innerHTML = state.value + name.value;
+    })
+
+    setTimeout(()=>{
+      state.value = 12;
+      name.value = 'rocy';
+    },1000)
+  </script>
+</body>
+</html>

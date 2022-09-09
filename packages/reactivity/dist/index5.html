@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/reactivity/dist/reactivity.global.js"></script> -->
+  <script src="./reactivity.global.js"></script>
+  <script>
+    const {effect,reactive,watch} = VueReactivity;
+    const state = reactive({firstName:'jack',secondName:"simpson",address:{num:1}});
+
+    // 监听对象无法区分前后的新值和老值
+    watch(state,function(newValue,oldValue){
+      console.log(newValue,oldValue);
+    })
+
+    //这里方式就是监控数据的变化，数据变化就会重新执行
+    //这里可以去监控一个函数，函数的返回值就是老值，更新后获取新值
+    watch(()=>state.address.num,function(newValue,oldValue){
+      console.log(newValue,oldValue);
+    })
+
+    effect(()=>{
+      app.innerHTML = state.firstName + "·" + state.secondName;
+    })
+
+    setTimeout(()=>{
+      state.firstName = "rocy";
+      state.address.num = 12;
+    },1000)
+
+    // watch本质上就是一个 effect,内部会对用户填写的数据进行依赖收集
+  </script>
+</body>
+</html>

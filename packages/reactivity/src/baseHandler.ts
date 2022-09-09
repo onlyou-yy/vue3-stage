@@ -8,6 +8,14 @@ export const enum  ReactiveFlags {
   IS_REACTIVE = "__v_isReactive",
 }
 
+/**
+ * 判读值是否是一个响应式数据
+ * @param value 
+ */
+export function isReactive(value){
+  return !!(value && value[ReactiveFlags.IS_REACTIVE]);
+}
+
 export const mutableHandlers = {
   /**
    * @param target 就是目标 object

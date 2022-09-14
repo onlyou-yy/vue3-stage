@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
+  <script>
+    const {reactive,readonly,toRaw,markRaw,effect,ref} = VueReactivity;
+    const state = {name:"jacl"};
+
+    //在访问的时候会进行依赖收集
+    state.name;
+    
+    //处理数组的 includes 方法等
+    const data = {name:'jw'};
+    const arr = reactive([data]);//对象中套对象，在取值的时候会进行递归代理
+    console.log(arr[0] === data);//这里访问arr[0]的时候回去的是代理对象
+
+    //这里调用 includes 内部会将代理对象转换成原始对象再进行处理 arr.includes 原始的不行再去代理过的找
+    console.log(arr.includes(data));//正常情况下不应该为true，所以要重写includes方法
+
+    //内置 symbol 的处理，__proto__ 这些不要处理
+    console.log(state[Symbol.interator]);
+    console.log(state.__proto__);
+
+    //不支持脱 ref 的情况
+    const proxyArr = reactive([ref(0),2,3]);
+    console.log(proxyArr[0]);//这种情况不支持脱 ref，就是必须要加 .value 才能访问到值
+    const obj = reactive({a:ref(0)});
+    console.log(obj.a);//这种情况是支持脱 ref 的
+
+  </script>
+</body>
+</html>

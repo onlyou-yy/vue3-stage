@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
+  <script>
+    const {reactive,readonly,toRaw,markRaw,effect,ref} = VueReactivity;
+    const state = reactive({name:"jw",age:12});
+    
+    delete state.name;//也会代理调用 deleteProperty 进行删除
+  
+    name in state;//使用的是 has 进行判断返回
+
+    for(let key in state){} //添加 ownKeys
+
+    state.name = 'super man';//添加 set
+
+    //-------------------------------------------------------------
+    let people = reactive({eat:'chi',drink:'喝'});
+    let person = reactive({});
+    let obj = {};
+    let proto = {a:1};
+    let proxyProto = new Proxy(proto,{
+      get(target,key,receiver){
+        return Reflect.get(target,key,receiver);
+      },
+      set(target,key,value,receiver){
+        console.log(proxyProto,receiver == myProxy);
+        return Reflect.set(target,key,value,receiver);//不考虑原型链上有set方法
+      }
+    })
+    Object.setPrototypeOf(obj,proxyProto);// 继承，obj.a 可以访问到 proto.a，会触发 proxyProto 的 get
+    let myProxy = new Proxy(obj,{
+      get(target,key,receiver){
+        return Reflect.get(target,key,receiver);
+      },
+      set(target,key,value,receiver){
+        console.log(proxyProto,receiver == myProxy);
+        return Reflect.set(target,key,value,receiver);//调用 reflect.set 会触发原型链的set
+      }
+    })
+    myProxy.a = 100;
+    /**
+     * 这会触发两次，当 myProxy.a = 100 时，触发 myProxy 的set
+     * 执行set的时候 Reflect.set(target,key,value,receiver) 又会触发 proxyProto 的 set
+     * 所以在Vue中处理访问原型上的属性的这种情况（代理数据之间有继承关系）时进行了屏蔽
+     *  baseHandlers -> createSetter -> if(target === toRaw(receiver))
+     */
+    let p1 = reactive({eat:'cc'});
+    let p2 = reactive({});
+    Object.setPrototypeOf(p2,p1);
+    p2.eat = "k";
+  </script>
+</body>
+</html>

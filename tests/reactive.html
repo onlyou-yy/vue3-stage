@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../node_modules/@vue/reactivity/dist/reactivity.global.js"></script>
+  <script>
+    const {reactive,readonly,toRaw,markRaw,effect,ref} = VueReactivity;
+    // let obj = {name:'jw'};
+    // let proxy1 = readonly(obj);
+    // let proxy2 = reactive(proxy1);
+    // console.log(proxy1 === proxy2);//true
+    /** 
+     * 通过断点后可以发现：
+     * 被readonly代理过的数据，再被reactive代理会直接返回readonly的结果
+     * readonly代理代理时会创建一个proxy对象，但是这个proxy的handle和reactive的并不是同一个
+     * 而是自己的 readonlyHandlers 在这里的 get 是 readonlyGet
+     * 当再次被 reactive 代理的时候就会先使用 isReadonly() -> __v_isReadonly 触发 readonlyGet 来判断是否是一个 readonly
+     * 如果是就直接返回当前对象
+    */
+
+    // let obj = {name:"jack"};
+    // let proxy1 = reactive(obj);
+    // let proxy2 = reactive(proxy1);
+    // let proxy3 = reactive(obj);
+    // console.log(proxy1 === proxy2);//true
+    // console.log(proxy1 === proxy3);//true
+    // console.log(proxy2 === proxy3);//true
+    /**
+     * 已经被reactive代理过的对戏那个，再次被代理就会返回上次代理的结果
+    */
+
+    //toRaw 从代理对象中返回原始值
+    let obj = {name:"jack"};
+    let proxy1 = reactive(obj);
+    console.log(obj === toRaw(proxy1));//true
+
+    //markRaw 标记对象不能被代理
+    let obj2 = {name:"jack"};
+    let proxy2 = reactive(markRaw(obj2));
+    console.log(proxy2);
+    /**
+     * toRaw 本质上来就是从代理的缓存中取出原始值
+     * 
+     * markRaw 就是通过 Object.defineProperty 来劫持数据，
+     * 给它加上一个不可代理的标识 __v_skip 并且让它不可被枚举 enumerate:false
+    */
+
+  </script>
+</body>
+</html>

@@ -131,3 +131,9 @@ const args = require('minimist')(process.argv.slice(2));
 + 然后 effect 默认数据变化要更新。先将正在执行的 effect 作为全局变量，渲染取值，在get方法中进行依赖收集
 + 使用 WeakMap 的结构来保存属性对应的effect `{对象:{属性:new Set()}}`
 + 然后在用户数据改变的时候，会通过对象、属性来来查找对应的 effect 集合,然后全部执行
+
+
+## Vue中解耦，将逻辑分成两个模块
++ 运行时核心（不依赖于平台的 browser test 小程序 app canvas...）靠的是 虚拟DOM
++ 针对不同的平台的运行时（Vue针对的是浏览器平台）
++ 渲染器

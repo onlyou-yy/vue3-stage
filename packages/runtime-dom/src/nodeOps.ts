@@ -27,7 +27,7 @@ export const nodeOps = {
   createElement(tagName){
     return document.createElement(tagName);
   },
-  createTexgt(text){
+  createText(text){
     return document.createTextNode(text);
   }
 }

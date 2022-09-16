@@ -8,27 +8,32 @@
 </head>
 <body>
   <div id="app"></div>
-  <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script>
   <script>
-  const {createRenderer,h} = VueRuntimeDOM;
-  //渲染的是虚拟DOM
-  const renderer = createRenderer({
-    //定义渲染行为
-    createElement(element){
-      return document.createElement(element);
-    },
-    setElementText(el,text){
-      el.innerHTML = text;
-    },
-    insert(el,container){
-      container.appendChild(el);
-    },
-    patchProp(el,key,prevValue,nextValue){
-      console.log(el,key)
-    }
-  });
-  //h会创建 虚拟DOM 然后提供给用户自定定义的渲染行为进行渲染
-  renderer.render(h('h1',{style:{color:'red'}},'hello'),app);
+    const {createRenderer,h} = VueRuntimeDOM;
+    //渲染的是虚拟DOM
+    const renderer = createRenderer({
+      //定义渲染行为
+      createElement(element){
+        return document.createElement(element);
+      },
+      setElementText(el,text){
+        el.innerHTML = text;
+      },
+      insert(el,container){
+        container.appendChild(el);
+      },
+      patchProp(el,key,prevValue,nextValue){
+        console.log(el,key)
+      }
+    });
+    //h会创建 虚拟DOM 然后提供给用户自定定义的渲染行为进行渲染
+    renderer.render(h('h1',{style:{color:'red'}},'hello'),app);
+  </script> -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+    const {render,h} = VueRuntimeDOM;
+    render(h('h1',{style:{color:"red"},onClick:()=>alert(1)},[h('span','123'),'123']),app);
   </script>
 </body>
 </html>

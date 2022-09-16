@@ -4,6 +4,10 @@ export const Text = Symbol('Text');
 export function isVnode(value){
   return !!(value && value.__v_isVnode);
 }
+/**判断是否是同一个虚拟节点 */
+export function isSameVnode(n1,n2){
+  return n1.type === n2.type && n1.key === n2.key;
+}
 
 /**
  * 创建虚拟节点

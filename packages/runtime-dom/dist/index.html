@@ -34,6 +34,10 @@
   <script>
     const {render,h} = VueRuntimeDOM;
     render(h('h1',{style:{color:"red"},onClick:()=>alert(1)},[h('span','123'),'123']),app);
+
+    setTimeout(()=>{
+      render(h('h1',{style:{color:"red"},onClick:()=>alert(1)},"1222"),app);
+    },1000)
   </script>
 </body>
 </html>

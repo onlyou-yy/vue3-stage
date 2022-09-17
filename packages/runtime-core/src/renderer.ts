@@ -21,11 +21,12 @@ export function createRenderder(renderOptions){
    * @param child 文件
    * @returns 
    */
-  const normalize = (child) => {
-    if(isString(child)){
-      return createVnode(Text,null,child);
+  const normalize = (children,i) => {
+    if(isString(children[i])){
+      let vnode = createVnode(Text,null,children[i]);
+      children[i] = vnode;
     }
-    return child;
+    return children[i];
   }
 
   /**
@@ -35,7 +36,7 @@ export function createRenderder(renderOptions){
    */
   const mountChildren = (children,container) => {
     for(let i = 0; i < children.length; i++){
-      let child = normalize(children[i]);
+      let child = normalize(children,i);//转化之后替换，不然之后在卸载的时候还需要进行判断转化
       //挂载子节点其实就是直接创建子节点，所以旧的虚拟节点是null
       patch(null,child,container)
     }
@@ -100,6 +101,15 @@ export function createRenderder(renderOptions){
     }
   }  
 
+  /**卸载子节点
+   * @param children 子虚拟节点数组
+   */
+  const unmountChildren = (children) => {
+    for(let i = 0;i < children.length;i++){
+      unmount(children[i]);
+    }
+  }
+
   /**
    * 对比子节点
    * @param n1 
@@ -110,9 +120,53 @@ export function createRenderder(renderOptions){
     //对比两个虚拟节点的子节点的差异
     const c1 = n1.children;
     const c2 = n2.children;
-
+    const prevShapeFlag = n1.shapeFlag;
+    const shapeFlag = n2.shapeFlag;
     //文本 空的/null 数组
-    
+    /**
+     * * 新儿子——旧儿子——操作
+     * 1.文本——数组——删除老儿子，设置文本内容
+     * 2.文本——文本——更新文本即可
+     * 3.文本——空——更新文本即可
+     * 4.数组——数组——diff算法
+     * 5.数组——文本——清空文本，进行挂载
+     * 6.数组——空——进行挂载
+     * 7.空——数组——删除所有儿子
+     * 8.空——文本——清空文本
+     * 9.空——空——无需处理
+     */
+    // 所有去掉重复的操作就只有1，2，4，5，7，8需要考虑
+    if(shapeFlag & ShapeFlags.TEXT_CHILDREN){
+      if(prevShapeFlag & ShapeFlags.ARRAY_CHILDREN){
+        //@1 -> 文本——数组
+        //删除老儿子
+        unmountChildren(c1);
+      }
+      if(c1 !== c2){//@2|3 -> 文本——文本 | 文本——空
+        //设置文本内容
+        hostSetElementText(el,c2);
+      }
+    }else{
+      // 新的为数组或为空
+      if(prevShapeFlag & ShapeFlags.ARRAY_CHILDREN){
+        if(shapeFlag & ShapeFlags.ARRAY_CHILDREN){
+          //@4 -> 数组——数组
+        }else{
+          //@7 -> 空——数组
+          unmountChildren(c1);
+        }
+      }else{
+        //@5 -> 数组——文本
+        if(prevShapeFlag & ShapeFlags.TEXT_CHILDREN){
+          //@8 -> 空——文本
+          hostSetElementText(el,'');
+        }
+        if(shapeFlag & ShapeFlags.ARRAY_CHILDREN){
+          //@6 -> 数组——空
+          mountChildren(c2,el);
+        }
+      }
+    }
   }
 
   /**

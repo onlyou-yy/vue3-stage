@@ -33,10 +33,27 @@
   <script src="./runtime-dom.global.js"></script>
   <script>
     const {render,h} = VueRuntimeDOM;
-    render(h('h1',{style:{color:"red"},onClick:()=>alert(1)},[h('span','123'),'123']),app);
+    render(h('ul',{style:{color:"red"}},[
+      h('li',{key:'a'},'a'),
+      h('li',{key:'b'},'b'),
+      h('li',{key:'c'},'c'),
+      h('li',{key:'d'},'d'),
+      h('li',{key:'e'},'e'),
+      h('li',{key:'f'},'f'),
+      h('li',{key:'g'},'g')
+    ]),app);
 
     setTimeout(()=>{
-      render(h('h1',{style:{color:"red"},onClick:()=>alert(1)},"1222"),app);
+      render(h('ul',{style:{background:"red"}},[
+        h('li',{key:'a'},'a'),
+        h('li',{key:'b'},'b'),
+        h('li',{key:'e'},'e'),
+        h('li',{key:'c'},'c'),
+        h('li',{key:'d'},'d'),
+        h('li',{key:'h'},'h'),
+        h('li',{key:'f'},'f'),
+        h('li',{key:'g'},'g'),
+      ]),app);
     },1000)
   </script>
 </body>

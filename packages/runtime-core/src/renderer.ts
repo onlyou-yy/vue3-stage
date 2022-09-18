@@ -47,7 +47,7 @@ export function createRenderder(renderOptions){
    * @param vnode 虚拟节点
    * @param el 挂载目标
    */
-  const mountElement = (vnode,container) => {
+  const mountElement = (vnode,container,anchor) => {
     let {type,props,children,shapeFlag} = vnode;
     //将真实元素挂载到这个虚拟节点上，后续用于复用节点和更新
     let el = vnode.el = hostCreateElement(type);
@@ -64,7 +64,7 @@ export function createRenderder(renderOptions){
       mountChildren(children,el);
     }
     //挂载到容器上
-    hostInsert(el,container);
+    hostInsert(el,container,anchor);
   }
 
   /**
@@ -90,13 +90,13 @@ export function createRenderder(renderOptions){
    * @param newProps 新节点属性
    * @param el 元素
    */
-  const pathcProps = (oldProps,newProps,el) => {
+  const patchProps = (oldProps,newProps,el) => {
     for(let key in newProps){
       hostPatchProp(el,key,oldProps[key],newProps[key]);
     }
     for(let key in oldProps){
       if(newProps[key] == null){
-        hostPatchProp(el,key,oldProps[key],null);
+        hostPatchProp(el,key,oldProps[key],undefined);
       }
     }
   }  
@@ -107,6 +107,126 @@ export function createRenderder(renderOptions){
   const unmountChildren = (children) => {
     for(let i = 0;i < children.length;i++){
       unmount(children[i]);
+    }
+  }
+
+  /**
+   * 全量比对（只比对同一级的）
+   * @param c1 新子节点
+   * @param c2 就子节点
+   * @param el 容器
+   */
+  const patchKeyedChildren = (c1,c2,el) => {
+    let i = 0;//头指针
+    let e1 = c1.length - 1;//新节点的尾指针
+    let e2 = c2.length - 1;//老节点的尾指针
+
+    // 简单的情况可以特殊处理来优化
+    // -----------------------------------------------
+    
+    // 从头部开始比较
+    // a b c -> a b c d
+    while(i <= e1 && i <= e2){//只要有一方停止就跳出
+      const n1 = c1[i];
+      const n2 = c2[i];
+      if(isSameVnode(n1,n2)){
+        //两节点是相同的讲究继续比较子节点
+        patch(n1,n2,el);
+      }else{
+        break;
+      }
+      i++;
+    }
+    //从尾部开始比较
+    //a b c -> d e b c
+    while(i <= e1 && i <= e2){
+      const n1 = c1[e1];
+      const n2 = c2[e2];
+      if(isSameVnode(n1,n2)){
+        patch(n1,n2,el);
+      }else{
+        break;
+      }
+      e1--;
+      e2--;
+    }
+
+    //对比完差异之后，要么就是新增，要目就是卸载
+
+    if(i > e1){
+      // 如果 i 比 e1 大就说明有新增,i 和 e2 之间的就是新增的部分
+      if(i <= e2){
+        while(i <= e2){
+          //新增是向前新增还是向后新增？
+          // 可以通过 e2 的下一个节点是否存在老确定
+          // 如果下一个节点存在就是向前新增，否则向后新增
+          const nextPos = e2 + 1;//下一个位置
+          const anchor = nextPos < c2.length ? c2[nextPos].el : null;
+          patch(null,c2[i],el,anchor);//创建新节点
+          i++;
+        }
+      }
+    }else if(i > e2){
+      //  i 比 e2 大说明要卸载，i 到 e1 之间的就是要卸载的
+      if(i <= e2){
+        while(i <= e1){
+          unmount(c1[i]);
+          i++;
+        }
+      }
+    }
+    
+    //优化完毕
+    //----------------------------------------------
+
+    //之后就是复杂的情况——乱序比对
+    /**
+     * a b c d e   f g
+     * a b e c d h f g
+     */
+    // 进过上面的遍历之后 i = 2;e1 = 4;e2 = 5
+    console.log(i,e1,e2);
+    let s1 = i;
+    let s2 = i;
+    //给新节点变化节点的区间的节点定义一个映射，方便后面查找
+    const keyToNewIndexMap = new Map();//key -> index
+    for(let i = s2;i <= e2; i++){
+      keyToNewIndexMap.set(c2[i].key,i);
+    }
+    // 循环老元素，看一下新的里面有没有，
+    // 如果有就要比较差异，没有就要添加到列表中，
+    // 老的有新的没有要删除
+    const toBePatched = e2 - s2 + 1;//新的总数
+    const newIndexToOldIndexMap = new Array(toBePatched).fill(0);//记录已经对比过的节点（在旧节点中已经存在的节点）的列表
+    for(let i = s1; i <= e1;i++){
+      const oldChild = c1[i];//老节点
+      let newIndex = keyToNewIndexMap.get(oldChild.key);
+      if(newIndex == undefined){
+        unmount(oldChild);//删除多余的
+      }else{
+        //新的位置对应的老的位置,i+1是因为等等要根据是否大于0来表示是否已经被patch过
+        newIndexToOldIndexMap[newIndex - s2] = i+1;//用来标记所patch的节点
+        patch(oldChild,c2[newIndex],el)
+      }
+    }
+    //在移除完多余的子节点之后就可以将新的节点倒序插入到之前的DOM中
+    //也就是说需要移动节点
+    for(let i = toBePatched - 1;i >= 0;i--){
+      let index = i + s2;
+      let current = c2[index];//找到新增部分的最后一个
+      let anchor = index + 1 < c2.length ? c2[index + 1].el : null;
+      //需要注意 c2 中的是还没有被挂载过的虚拟节点
+      if(newIndexToOldIndexMap[i] === 0){
+        //新增的节点，还没有挂载过，所以需要先创建真实DOM
+        patch(null,current,el,anchor);
+      }else{
+        //已经比对过，就是已经存在真实DOM可以复用
+        hostInsert(current.el,el,anchor);//这种方式比较耗费性能，因为无论如何都需要进行一遍倒序插入
+        //其实可以不用这样做，可以根据刚才的数组来减少插入次数
+        //可以把连续的节点看做是一个节点来批量插入
+        //比如现在的newIndexToOldIndexMap = [5,3,4,0] 可以把 3,4 当成一块来插入
+        //这种方式在Vue3中叫做：最长递增子序列
+      }
     }
   }
 
@@ -151,6 +271,7 @@ export function createRenderder(renderOptions){
       if(prevShapeFlag & ShapeFlags.ARRAY_CHILDREN){
         if(shapeFlag & ShapeFlags.ARRAY_CHILDREN){
           //@4 -> 数组——数组
+          patchKeyedChildren(c1,c2,el);//全量比对（只进行同级比较）
         }else{
           //@7 -> 空——数组
           unmountChildren(c1);
@@ -181,7 +302,7 @@ export function createRenderder(renderOptions){
     
     let oldProps = n1.props || {};
     let newProps = n2.props || {};
-    pathcProps(oldProps,newProps,el);
+    patchProps(oldProps,newProps,el);
     patchChildren(n1,n2,el);
   }
 
@@ -191,10 +312,10 @@ export function createRenderder(renderOptions){
    * @param n2 
    * @param container 
    */
-  const processElement = (n1,n2,container) => {
+  const processElement = (n1,n2,container,anchor) => {
     if(n1 === null){
       //初始挂载
-      mountElement(n2,container);
+      mountElement(n2,container,anchor);
     }else{
       //更新
       //如果前后完成没关系，删除老的 添加新的
@@ -205,17 +326,18 @@ export function createRenderder(renderOptions){
   }
 
   /**
-   * 对比新老虚拟节点
+   * 对比新老虚拟节点,当 n1 为null时表示新增n2
    * @param n1 老虚拟DOM
    * @param n2 新虚拟DOM
    * @param container 挂载容器
+   * @param anchor 参照物，决定要挂载的位置
    * @returns 
    */
-  const patch = (n1,n2,container)=>{
+  const patch = (n1,n2,container,anchor = null)=>{
     if(n1 == n2) return;
 
     //如果两个元素不一样就删除老的，之后再添加新的
-    if(n1 && isSameVnode(n1,n2)){
+    if(n1 && !isSameVnode(n1,n2)){
       unmount(n1);//删除老的
       n1 = null;
     }
@@ -230,7 +352,7 @@ export function createRenderder(renderOptions){
         break;
       default:
         if(shapeFlag & ShapeFlags.ELEMENT){
-          processElement(n1,n2,container);
+          processElement(n1,n2,container,anchor);
         }
     }
   }

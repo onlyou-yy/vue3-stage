@@ -4,7 +4,7 @@
  * @param prevValue 旧值
  * @param nextValue 新值
  */
-export function patchStyle(el,prevValue,nextValue){
+export function patchStyle(el,prevValue,nextValue = {}){
   // 先将新的属性全部加入进来
   for(let key in nextValue){
     el.style[key] = nextValue[key];

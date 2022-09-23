@@ -1,6 +1,6 @@
 import { isString, ShapeFlags } from '@vue/shared';
 import { getSequence } from './sequence';
-import { createVnode, isSameVnode, Text } from './vnode';
+import { createVnode, isSameVnode, Text, Fragment } from './vnode';
 /**创建渲染器 */
 export function createRenderder(renderOptions){
 
@@ -344,6 +344,15 @@ export function createRenderder(renderOptions){
     }
   }
 
+  /**处理文档碎片，进行一次性处理; */
+  const processFragment = (n1,n2,container) => {
+    if(n1 == null){
+      mountChildren(n2.children,container)
+    }else{
+      patchChildren(n1,n2,container);//中diff算法
+    }
+  }
+
   /**
    * 对比新老虚拟节点,当 n1 为null时表示新增n2
    * @param n1 老虚拟DOM
@@ -368,6 +377,11 @@ export function createRenderder(renderOptions){
         // 如果children直接就是一个文本是不能通过`document.createElement('文本')`
         // 创建的，所以要定义类型来进行处理
         processText(n1,n2,container);
+        break;
+      case Fragment:
+        // 处理文档碎片，进行一次性处理;
+        // h(Fragment,[h(Text,'hello'),h(Text,'world')])
+        processFragment(n1,n2,container);
         break;
       default:
         if(shapeFlag & ShapeFlags.ELEMENT){

@@ -32,29 +32,32 @@
   </script> -->
   <script src="./runtime-dom.global.js"></script>
   <script>
-    const {render,h} = VueRuntimeDOM;
-    render(h('ul',{},[
-      h('li',{key:'a'},'a'),
-      h('li',{key:'b'},'b'),
-      h('li',{key:'c'},'c'),
-      h('li',{key:'d'},'d'),
-      h('li',{key:'e'},'e'),
-      h('li',{key:'f'},'f'),
-      h('li',{key:'g'},'g')
-    ]),app);
+    const {render,h,Text,Fragment} = VueRuntimeDOM;
+    // render(h('ul',{},[
+    //   h('li',{key:'a'},'a'),
+    //   h('li',{key:'b'},'b'),
+    //   h('li',{key:'c'},'c'),
+    //   h('li',{key:'d'},'d'),
+    //   h('li',{key:'e'},'e'),
+    //   h('li',{key:'f'},'f'),
+    //   h('li',{key:'g'},'g')
+    // ]),app);
 
-    setTimeout(()=>{
-      render(h('ul',{},[
-        h('li',{key:'a'},'a'),
-        h('li',{key:'b'},'b'),
-        h('li',{key:'e'},'e'),
-        h('li',{key:'c'},'c'),
-        h('li',{key:'d'},'d'),
-        h('li',{key:'h'},'h'),
-        h('li',{key:'f'},'f'),
-        h('li',{key:'g'},'g'),
-      ]),app);
-    },5000)
+    // setTimeout(()=>{
+    //   render(h('ul',{},[
+    //     h('li',{key:'a'},'a'),
+    //     h('li',{key:'b'},'b'),
+    //     h('li',{key:'e'},'e'),
+    //     h('li',{key:'c'},'c'),
+    //     h('li',{key:'d'},'d'),
+    //     h('li',{key:'h'},'h'),
+    //     h('li',{key:'f'},'f'),
+    //     h('li',{key:'g'},'g'),
+    //   ]),app);
+    // },5000)
+
+    render(h(Fragment,[h(Text,'hello'),h(Text,'world')]),app);
+    
   </script>
 </body>
 </html>

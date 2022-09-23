@@ -1,4 +1,5 @@
 import { isString, ShapeFlags } from '@vue/shared';
+import { getSequence } from './sequence';
 import { createVnode, isSameVnode, Text } from './vnode';
 /**创建渲染器 */
 export function createRenderder(renderOptions){
@@ -198,6 +199,7 @@ export function createRenderder(renderOptions){
     // 老的有新的没有要删除
     const toBePatched = e2 - s2 + 1;//新的总数
     const newIndexToOldIndexMap = new Array(toBePatched).fill(0);//记录已经对比过的节点（在旧节点中已经存在的节点）的列表
+
     for(let i = s1; i <= e1;i++){
       const oldChild = c1[i];//老节点
       let newIndex = keyToNewIndexMap.get(oldChild.key);
@@ -209,6 +211,12 @@ export function createRenderder(renderOptions){
         patch(oldChild,c2[newIndex],el)
       }
     }
+
+    //获取最长增长子序列
+    let increment = getSequence(newIndexToOldIndexMap);
+    console.log(increment);
+    //需要移动的位置
+    let j = increment.length - 1;
     //在移除完多余的子节点之后就可以将新的节点倒序插入到之前的DOM中
     //也就是说需要移动节点
     for(let i = toBePatched - 1;i >= 0;i--){
@@ -221,11 +229,22 @@ export function createRenderder(renderOptions){
         patch(null,current,el,anchor);
       }else{
         //已经比对过，就是已经存在真实DOM可以复用
-        hostInsert(current.el,el,anchor);//这种方式比较耗费性能，因为无论如何都需要进行一遍倒序插入
+        // hostInsert(current.el,el,anchor);//这种方式比较耗费性能，因为无论如何都需要进行一遍倒序插入
+
         //其实可以不用这样做，可以根据刚才的数组来减少插入次数
-        //可以把连续的节点看做是一个节点来批量插入
-        //比如现在的newIndexToOldIndexMap = [5,3,4,0] 可以把 3,4 当成一块来插入
-        //这种方式在Vue3中叫做：最长递增子序列
+        //1.可以把连续的节点看做是一个节点来批量插入
+        //  比如现在的newIndexToOldIndexMap = [5,3,4,0] 可以把 3,4 当成一块来插入
+        //2.也可以直接跳过连续的节点
+        //  比如newIndexToOldIndexMap = [5,3,4,0]，在倒序插入的时候先创建并插入了0，然后可以发现[3,4]本来就应该是在当前的位置了，
+        //  再进行插入的话也不会有变化，所以不需要再做操作
+        //  这种也可以直接跳过连续的节点方式在Vue3中叫做：最长递增子序列
+        //  不过这里拿到的序列是节点的索引序列。
+        if(i != increment[j]){
+          hostInsert(current.el,el,anchor)
+        }else{
+          j--;
+          console.log('插入')
+        }
       }
     }
   }

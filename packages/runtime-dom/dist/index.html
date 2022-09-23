@@ -33,7 +33,7 @@
   <script src="./runtime-dom.global.js"></script>
   <script>
     const {render,h} = VueRuntimeDOM;
-    render(h('ul',{style:{color:"red"}},[
+    render(h('ul',{},[
       h('li',{key:'a'},'a'),
       h('li',{key:'b'},'b'),
       h('li',{key:'c'},'c'),
@@ -44,7 +44,7 @@
     ]),app);
 
     setTimeout(()=>{
-      render(h('ul',{style:{background:"red"}},[
+      render(h('ul',{},[
         h('li',{key:'a'},'a'),
         h('li',{key:'b'},'b'),
         h('li',{key:'e'},'e'),
@@ -54,7 +54,7 @@
         h('li',{key:'f'},'f'),
         h('li',{key:'g'},'g'),
       ]),app);
-    },1000)
+    },5000)
   </script>
 </body>
 </html>

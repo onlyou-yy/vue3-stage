@@ -38,6 +38,51 @@ var VueRuntimeDOM = (() => {
   };
   var isArray = Array.isArray;
 
+  // packages/runtime-core/src/sequence.ts
+  function getSequence(arr) {
+    const len = arr.length;
+    const result = [0];
+    const p = new Array(len).fill(0);
+    let resultLastIndex;
+    let start;
+    let end;
+    let middle;
+    for (let i2 = 0; i2 < len; i2++) {
+      let arrI = arr[i2];
+      if (arrI !== 0) {
+        resultLastIndex = result[result.length - 1];
+        if (arr[resultLastIndex] < arrI) {
+          result.push(i2);
+          p[i2] = resultLastIndex;
+          continue;
+        }
+        start = 0;
+        end = result.length - 1;
+        while (start < end) {
+          middle = (start + end) / 2 | 0;
+          if (arr[result[middle]] < arrI) {
+            start = middle + 1;
+          } else {
+            end = middle;
+          }
+        }
+        if (arr[result[start]] > arrI) {
+          result[start] = i2;
+          p[i2] = result[start - 1];
+        }
+      }
+    }
+    let i = result.length;
+    let last = result[i - 1];
+    while (i-- > 0) {
+      result[i] = last;
+      last = p[last];
+    }
+    return result;
+  }
+  console.log(getSequence([2, 3, 1, 5, 6, 8, 7, 9, 4]));
+  console.log(getSequence([3, 2, 8, 9, 5, 6, 7, 11, 15, 4]));
+
   // packages/runtime-core/src/vnode.ts
   var Text = Symbol("Text");
   function isVnode(value) {
@@ -198,6 +243,9 @@ var VueRuntimeDOM = (() => {
           patch(oldChild, c2[newIndex], el);
         }
       }
+      let increment = getSequence(newIndexToOldIndexMap);
+      console.log(increment);
+      let j = increment.length - 1;
       for (let i2 = toBePatched - 1; i2 >= 0; i2--) {
         let index = i2 + s2;
         let current = c2[index];
@@ -205,7 +253,12 @@ var VueRuntimeDOM = (() => {
         if (newIndexToOldIndexMap[i2] === 0) {
           patch(null, current, el, anchor);
         } else {
-          hostInsert(current.el, el, anchor);
+          if (i2 != increment[j]) {
+            hostInsert(current.el, el, anchor);
+          } else {
+            j--;
+            console.log("\u63D2\u5165");
+          }
         }
       }
     };

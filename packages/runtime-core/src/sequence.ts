@@ -81,6 +81,6 @@ export function getSequence(arr){
   return result
 }
 
-console.log(getSequence([2,3,1,5,6,8,7,9,4]));
-console.log(getSequence([3,2,8,9,5,6,7,11,15,4]));
+// console.log(getSequence([2,3,1,5,6,8,7,9,4]));
+// console.log(getSequence([3,2,8,9,5,6,7,11,15,4]));
 

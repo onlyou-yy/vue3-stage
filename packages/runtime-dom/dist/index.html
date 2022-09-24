@@ -14,22 +14,39 @@
     const {render,h,Text,Fragment} = VueRuntimeDOM;
 
     //Vue3兼容Vue2的写法，简单的组件可以采用optionsApi,复杂的采用compositionApi
+    // const VueComponent = {
+    //   data(){
+    //     return {
+    //       name:"jack",
+    //       age:12
+    //     }
+    //   },
+    //   render(){
+    //     // render函数需要返回虚拟节点，最终渲染的就是返回的虚拟节点
+    //     setTimeout(()=>{
+    //       this.age++;
+    //     },1000)
+    //     return h('p',`${this.name}今年${this.age}岁了`)
+    //   }
+    // }
+    // render(h(VueComponent),app);
+
+    //组件有三大特性：1.属性，属性变化组件如何更新，2.插槽，3.事件
     const VueComponent = {
-      data(){
-        return {
-          name:"jack",
-          age:12
-        }
+      props:{
+        address:String,//类型校验
       },
       render(){
-        // render函数需要返回虚拟节点，最终渲染的就是返回的虚拟节点
-        setTimeout(()=>{
-          this.age++;
-        },1000)
-        return h('p',`${this.name}今年${this.age}岁了`)
+        //当前render的this是指向状态的，因为在 processComponent 处理中绑定了
+        //然后在开发环境中 this.$attrs 是一个proxy，但是在生产环境上是一个普通对象
+        //所以 this.$attrs 并不是响应式的数据
+        //而且组件的状态是单向数据流，所以在组件中并不能修改传入的数据（属性）
+        return h('p',this.address+this.$attrs.a+this.$attrs.b)
       }
     }
-    render(h(VueComponent),app);
+    //在props中定义了的属性才会被放入到 状态中通过this访问
+    //其他的属性会放到this.$attrs
+    render(h(VueComponent,{address:"xxx",a:1,b:2}),app);
   </script>
 </body>
 </html>

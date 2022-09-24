@@ -1,5 +1,6 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity';
-import { isString, ShapeFlags } from '@vue/shared';
+import { hanOwn, isString, ShapeFlags } from '@vue/shared';
+import { initProps } from './componentProps';
 import { queueJob } from './scheduler';
 import { getSequence } from './sequence';
 import { createVnode, isSameVnode, Text, Fragment } from './vnode';
@@ -355,9 +356,13 @@ export function createRenderder(renderOptions){
     }
   }
 
+  /**公开的属性 */
+  const publicPropertyMap = {
+    $attrs:(i) => i.attrs
+  }
   /**挂载组件 */
   const mountComponent = (vnode,container,anchor) => {
-    let {data=()=>({}),render} = vnode.type;//type就是用户定义的组件
+    let {data=()=>({}),render,props:propsOptions = {}} = vnode.type;//type就是用户定义的组件
     const state = reactive(data());//pinia 源码就是 reactive({})作为组件的状态
 
     //组件的实例
@@ -369,23 +374,59 @@ export function createRenderder(renderOptions){
       subTree:null,
       isMounted:false,//是否已经被挂载
       update:null,//更新方法
+      propsOptions,
+      props:{},
+      attrs:{},
+      proxy:null,//访问代理
     }
 
+    // 初始化props
+    initProps(instance,vnode.props);
+
+    instance.proxy = new Proxy(instance,{
+      get(target,key){
+        let {state,props} = target;
+        if(state && hanOwn(state,key)){
+          return state[key];
+        }else if(props && hanOwn(props,key)){
+          return props[key];
+        }
+        //this.$attrs
+        let getter = publicPropertyMap[key];
+        if(getter){
+          return getter(target);
+        }
+      },
+      set(target,key,value){
+        let {state,props} = target;
+        if(state && hanOwn(state,key)){
+          state[key] = value;
+          return true;
+          // 用户操作的属性是代理对象，这里被屏蔽了
+          // 但是可以通过instance.props拿到真实的porps
+        }else if(props && hanOwn(props,key)){
+          console.warn('不能修改props中的数据：' + (key as string));
+          return false;
+        }
+        return true;
+      }
+    })
+
     //组件挂载和更新方法
-    const componentMountFn = () => {
+    const componentUpdateFn = () => {
       if(!instance.isMounted){//挂载
-        const subTree = render.call(state);//state作为this，后续this会改变
+        const subTree = render.call(instance.proxy);//state作为this，后续this会改变
         patch(null,subTree,container,anchor);//创建了subTree的真实节点并且插入了
         instance.subTree = subTree;
         instance.isMounted = true;
       }else{//组件内部更新
-        const subTree = render.call(state);
+        const subTree = render.call(instance.proxy);
         patch(instance.subTree,subTree,container,anchor);
         instance.subTree = subTree;
       }
     }
     //queueJob处理多次更新情况,实现组件的异步更新
-    const effect = new ReactiveEffect(componentMountFn,()=>queueJob(instance.update));
+    const effect = new ReactiveEffect(componentUpdateFn,()=>queueJob(instance.update));
     //我们将组件强制更新的逻辑保存到组件的实例上，之后就可以通过实例来使用
     let update = instance.update = effect.run.bind(effect);//调用effect.run(),可以让组件强制重新渲染
     update();

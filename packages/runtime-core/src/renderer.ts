@@ -1,5 +1,6 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity';
 import { hanOwn, isString, ShapeFlags } from '@vue/shared';
+import { createComponentInstance, setupComponent } from './component';
 import { initProps } from './componentProps';
 import { queueJob } from './scheduler';
 import { getSequence } from './sequence';
@@ -362,55 +363,62 @@ export function createRenderder(renderOptions){
   }
   /**挂载组件 */
   const mountComponent = (vnode,container,anchor) => {
-    let {data=()=>({}),render,props:propsOptions = {}} = vnode.type;//type就是用户定义的组件
-    const state = reactive(data());//pinia 源码就是 reactive({})作为组件的状态
+    // 1.创建一个组件实例
+    let instance = vnode.component = createComponentInstance(vnode);
+    // 2.给实例上赋值
+    setupComponent(instance);
+    // 3.创建一个effect
 
-    //组件的实例
-    const instance = { 
-      state,
-      //在Vue2的源码中组件的虚拟节点叫 $vnode,渲染的内容叫 _vnode
-      //在Vue3的源码中组件的虚拟节点叫 vnode,渲染的内容叫 subTree
-      vnode,
-      subTree:null,
-      isMounted:false,//是否已经被挂载
-      update:null,//更新方法
-      propsOptions,
-      props:{},
-      attrs:{},
-      proxy:null,//访问代理
-    }
+
+    // let {data=()=>({}),render,props:propsOptions = {}} = vnode.type;//type就是用户定义的组件
+    // const state = reactive(data());//pinia 源码就是 reactive({})作为组件的状态
+
+    // //组件的实例
+    // const instance = { 
+    //   state,
+    //   //在Vue2的源码中组件的虚拟节点叫 $vnode,渲染的内容叫 _vnode
+    //   //在Vue3的源码中组件的虚拟节点叫 vnode,渲染的内容叫 subTree
+    //   vnode,
+    //   subTree:null,
+    //   isMounted:false,//是否已经被挂载
+    //   update:null,//更新方法
+    //   propsOptions,
+    //   props:{},
+    //   attrs:{},
+    //   proxy:null,//访问代理
+    // }
 
     // 初始化props
-    initProps(instance,vnode.props);
+    // initProps(instance,vnode.props);
 
-    instance.proxy = new Proxy(instance,{
-      get(target,key){
-        let {state,props} = target;
-        if(state && hanOwn(state,key)){
-          return state[key];
-        }else if(props && hanOwn(props,key)){
-          return props[key];
-        }
-        //this.$attrs
-        let getter = publicPropertyMap[key];
-        if(getter){
-          return getter(target);
-        }
-      },
-      set(target,key,value){
-        let {state,props} = target;
-        if(state && hanOwn(state,key)){
-          state[key] = value;
-          return true;
-          // 用户操作的属性是代理对象，这里被屏蔽了
-          // 但是可以通过instance.props拿到真实的porps
-        }else if(props && hanOwn(props,key)){
-          console.warn('不能修改props中的数据：' + (key as string));
-          return false;
-        }
-        return true;
-      }
-    })
+    // instance.proxy = new Proxy(instance,{
+    //   get(target,key){
+    //     let {state,props} = target;
+    //     if(state && hanOwn(state,key)){
+    //       return state[key];
+    //     }else if(props && hanOwn(props,key)){
+    //       return props[key];
+    //     }
+    //     //this.$attrs
+    //     let getter = publicPropertyMap[key];
+    //     if(getter){
+    //       return getter(target);
+    //     }
+    //   },
+    //   set(target,key,value){
+    //     let {state,props} = target;
+    //     if(state && hanOwn(state,key)){
+    //       state[key] = value;
+    //       return true;
+    //       // 用户操作的属性是代理对象，这里被屏蔽了
+    //       // 但是可以通过instance.props拿到真实的porps
+    //     }else if(props && hanOwn(props,key)){
+    //       console.warn('不能修改props中的数据：' + (key as string));
+    //       return false;
+    //     }
+    //     return true;
+    //   }
+    // })
 
     //组件挂载和更新方法
     const componentUpdateFn = () => {

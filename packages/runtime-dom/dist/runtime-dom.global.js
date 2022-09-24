@@ -119,6 +119,9 @@ var VueRuntimeDOM = (() => {
   var isString = (val) => {
     return typeof val === "string";
   };
+  var isFunction = (val) => {
+    return typeof val === "function";
+  };
   var isArray = Array.isArray;
   var hasOwnProperty = Object.prototype.hasOwnProperty;
   var hanOwn = (value, key) => hasOwnProperty.call(value, key);
@@ -181,6 +184,61 @@ var VueRuntimeDOM = (() => {
     }
     instance.props = reactive(props);
     instance.attrs = attrs;
+  }
+
+  // packages/runtime-core/src/component.ts
+  function createComponentInstance(vnode) {
+    const instance = {
+      data: null,
+      vnode,
+      subTree: null,
+      isMounted: false,
+      update: null,
+      propsOptions: vnode.type.props,
+      props: {},
+      attrs: {},
+      proxy: null
+    };
+    return instance;
+  }
+  var publicPropertyMap = {
+    $attrs: (i) => i.attrs
+  };
+  var publicInstanceProxy = {
+    get(target, key) {
+      let { data, props } = target;
+      if (data && hanOwn(data, key)) {
+        return data[key];
+      } else if (props && hanOwn(props, key)) {
+        return props[key];
+      }
+      let getter = publicPropertyMap[key];
+      if (getter) {
+        return getter(target);
+      }
+    },
+    set(target, key, value) {
+      let { data, props } = target;
+      if (data && hanOwn(data, key)) {
+        data[key] = value;
+        return true;
+      } else if (props && hanOwn(props, key)) {
+        console.warn("\u4E0D\u80FD\u4FEE\u6539props\u4E2D\u7684\u6570\u636E\uFF1A" + key);
+        return false;
+      }
+      return true;
+    }
+  };
+  function setupComponent(instance) {
+    let { props, type } = instance.vnode;
+    initProps(instance, props);
+    instance.proxy = new Proxy(instance, publicInstanceProxy);
+    let data = type.data;
+    if (data) {
+      if (!isFunction(data))
+        return console.warn("\u5FC5\u987B\u662F\u4E00\u4E2A\u51FD\u6570");
+      instance.data = reactive(data.call(instance.proxy));
+    }
   }
 
   // packages/runtime-core/src/scheduler.ts
@@ -479,57 +537,20 @@ var VueRuntimeDOM = (() => {
         patchChildren(n1, n2, container);
       }
     };
-    const publicPropertyMap = {
+    const publicPropertyMap2 = {
       $attrs: (i) => i.attrs
     };
     const mountComponent = (vnode, container, anchor) => {
-      let { data = () => ({}), render: render3, props: propsOptions = {} } = vnode.type;
-      const state = reactive(data());
-      const instance = {
-        state,
-        vnode,
-        subTree: null,
-        isMounted: false,
-        update: null,
-        propsOptions,
-        props: {},
-        attrs: {},
-        proxy: null
-      };
-      initProps(instance, vnode.props);
-      instance.proxy = new Proxy(instance, {
-        get(target, key) {
-          let { state: state2, props } = target;
-          if (state2 && hanOwn(state2, key)) {
-            return state2[key];
-          } else if (props && hanOwn(props, key)) {
-            return props[key];
-          }
-          let getter = publicPropertyMap[key];
-          if (getter) {
-            return getter(target);
-          }
-        },
-        set(target, key, value) {
-          let { state: state2, props } = target;
-          if (state2 && hanOwn(state2, key)) {
-            state2[key] = value;
-            return true;
-          } else if (props && hanOwn(props, key)) {
-            console.warn("\u4E0D\u80FD\u4FEE\u6539props\u4E2D\u7684\u6570\u636E\uFF1A" + key);
-            return false;
-          }
-          return true;
-        }
-      });
+      let instance = vnode.component = createComponentInstance(vnode);
+      setupComponent(instance);
       const componentUpdateFn = () => {
         if (!instance.isMounted) {
-          const subTree = render3.call(instance.proxy);
+          const subTree = render2.call(instance.proxy);
           patch(null, subTree, container, anchor);
           instance.subTree = subTree;
           instance.isMounted = true;
         } else {
-          const subTree = render3.call(instance.proxy);
+          const subTree = render2.call(instance.proxy);
           patch(instance.subTree, subTree, container, anchor);
           instance.subTree = subTree;
         }

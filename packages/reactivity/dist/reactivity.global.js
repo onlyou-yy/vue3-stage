@@ -20,6 +20,8 @@ var VueReactivity = (() => {
   // packages/reactivity/src/index.ts
   var src_exports = {};
   __export(src_exports, {
+    ReactiveEffect: () => ReactiveEffect,
+    activeEffect: () => activeEffect,
     computed: () => computed,
     effect: () => effect,
     proxyRefs: () => proxyRefs,
@@ -27,6 +29,10 @@ var VueReactivity = (() => {
     ref: () => ref,
     toRef: () => toRef,
     toRefs: () => toRefs,
+    track: () => track,
+    trackEffects: () => trackEffects,
+    trigger: () => trigger,
+    triggerEffects: () => triggerEffects,
     watch: () => watch
   });
 

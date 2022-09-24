@@ -25,7 +25,7 @@ export const enum ShapeFlags {
   ELEMENT = 1,
   /**函数式组件 */
   FUNCTIONAL_COMPONENT = 1 << 1,
-  /**普通组件 */
+  /**有状态的组件 */
   STATEFUL_COMPONENT = 1 << 2,
   /**文本子节点 */
   TEXT_CHILDREN = 1 << 3,

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script>
+  <script>
+    const {createRenderer,h} = VueRuntimeDOM;
+    //渲染的是虚拟DOM
+    const renderer = createRenderer({
+      //定义渲染行为
+      createElement(element){
+        return document.createElement(element);
+      },
+      setElementText(el,text){
+        el.innerHTML = text;
+      },
+      insert(el,container){
+        container.appendChild(el);
+      },
+      patchProp(el,key,prevValue,nextValue){
+        console.log(el,key)
+      }
+    });
+    //h会创建 虚拟DOM 然后提供给用户自定定义的渲染行为进行渲染
+    renderer.render(h('h1',{style:{color:'red'}},'hello'),app);
+  </script> -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+    const {render,h,Text,Fragment} = VueRuntimeDOM;
+    // render(h('ul',{},[
+    //   h('li',{key:'a'},'a'),
+    //   h('li',{key:'b'},'b'),
+    //   h('li',{key:'c'},'c'),
+    //   h('li',{key:'d'},'d'),
+    //   h('li',{key:'e'},'e'),
+    //   h('li',{key:'f'},'f'),
+    //   h('li',{key:'g'},'g')
+    // ]),app);
+
+    // setTimeout(()=>{
+    //   render(h('ul',{},[
+    //     h('li',{key:'a'},'a'),
+    //     h('li',{key:'b'},'b'),
+    //     h('li',{key:'e'},'e'),
+    //     h('li',{key:'c'},'c'),
+    //     h('li',{key:'d'},'d'),
+    //     h('li',{key:'h'},'h'),
+    //     h('li',{key:'f'},'f'),
+    //     h('li',{key:'g'},'g'),
+    //   ]),app);
+    // },5000)
+
+    render(h(Fragment,[h(Text,'hello'),h(Text,'world')]),app);
+    
+  </script>
+</body>
+</html>

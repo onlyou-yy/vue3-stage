@@ -1,4 +1,6 @@
+import { reactive, ReactiveEffect } from '@vue/reactivity';
 import { isString, ShapeFlags } from '@vue/shared';
+import { queueJob } from './scheduler';
 import { getSequence } from './sequence';
 import { createVnode, isSameVnode, Text, Fragment } from './vnode';
 /**创建渲染器 */
@@ -353,6 +355,51 @@ export function createRenderder(renderOptions){
     }
   }
 
+  /**挂载组件 */
+  const mountComponent = (vnode,container,anchor) => {
+    let {data=()=>({}),render} = vnode.type;//type就是用户定义的组件
+    const state = reactive(data());//pinia 源码就是 reactive({})作为组件的状态
+
+    //组件的实例
+    const instance = { 
+      state,
+      //在Vue2的源码中组件的虚拟节点叫 $vnode,渲染的内容叫 _vnode
+      //在Vue3的源码中组件的虚拟节点叫 vnode,渲染的内容叫 subTree
+      vnode,
+      subTree:null,
+      isMounted:false,//是否已经被挂载
+      update:null,//更新方法
+    }
+
+    //组件挂载和更新方法
+    const componentMountFn = () => {
+      if(!instance.isMounted){//挂载
+        const subTree = render.call(state);//state作为this，后续this会改变
+        patch(null,subTree,container,anchor);//创建了subTree的真实节点并且插入了
+        instance.subTree = subTree;
+        instance.isMounted = true;
+      }else{//组件内部更新
+        const subTree = render.call(state);
+        patch(instance.subTree,subTree,container,anchor);
+        instance.subTree = subTree;
+      }
+    }
+    //queueJob处理多次更新情况,实现组件的异步更新
+    const effect = new ReactiveEffect(componentMountFn,()=>queueJob(instance.update));
+    //我们将组件强制更新的逻辑保存到组件的实例上，之后就可以通过实例来使用
+    let update = instance.update = effect.run.bind(effect);//调用effect.run(),可以让组件强制重新渲染
+    update();
+  }
+
+  /**处理组件 */
+  const processComponent = (n1,n2,container,anchor = null) => {
+    if(n1 == null){
+      mountComponent(n2,container,anchor);
+    }else{
+      //组件更新靠的是props
+    }
+  }
+
   /**
    * 对比新老虚拟节点,当 n1 为null时表示新增n2
    * @param n1 老虚拟DOM
@@ -384,8 +431,10 @@ export function createRenderder(renderOptions){
         processFragment(n1,n2,container);
         break;
       default:
-        if(shapeFlag & ShapeFlags.ELEMENT){
+        if(shapeFlag & ShapeFlags.ELEMENT){//元素
           processElement(n1,n2,container,anchor);
+        }else if(shapeFlag & ShapeFlags.COMPONENT){//组件
+          processComponent(n1,n2,container,anchor);
         }
     }
   }

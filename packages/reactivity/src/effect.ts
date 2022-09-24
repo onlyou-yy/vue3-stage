@@ -21,7 +21,7 @@ export class ReactiveEffect{
   public active = true;//这个effect默认是激活状态（是否进行依赖收集）
   public deps = [];//依赖的属性
   //public fn 是 this.fn = fn 简写
-  constructor(public fn,public scheduler){}
+  constructor(public fn,public scheduler?){}
   /**运行effect的回调 */
   run(){
     //如果没有激活就只运行函数，不进行依赖收集

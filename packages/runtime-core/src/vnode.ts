@@ -1,4 +1,4 @@
-import { isArray, isString, ShapeFlags } from "@vue/shared";
+import { isArray, isObject, isString, ShapeFlags } from "@vue/shared";
 export const Text = Symbol('Text');
 export const Fragment = Symbol('Fragment');
 /**判断是否是虚拟节点 */
@@ -20,8 +20,10 @@ export function createVnode(type,props = {},children = null){
   //组合方案 shapeFlag ，如果需要知道一个元素中包含的是多个儿子还是一个儿子，
   //可以采用标识来确定
 
-  //当前的标签的类型，如果是字符串元素
-  let shapeFlag = isString(type) ? ShapeFlags.ELEMENT : 0;
+  //当前的标签的类型，如果是字符串元素就是一个标签，如果是对象就是一个组件
+  let shapeFlag = 
+      isString(type) ? ShapeFlags.ELEMENT : 
+      isObject(type) ? ShapeFlags.STATEFUL_COMPONENT : 0;
 
   //虚拟DOM就是一个对象，diff算法。真实DOM的属性比较多
   const vnode = {

@@ -72,7 +72,7 @@ export function setupComponent(instance){
 }
 
 /**对比属性是否变化*/
-const hasPropsChange = (prevProps = {},nextProps = {}) => {
+export const hasPropsChange = (prevProps = {},nextProps = {}) => {
   const nextKeys = Object.keys(nextProps);
   // 属性的个数是否变化
   if(nextKeys.length !== Object.keys(prevProps).length){
@@ -91,19 +91,15 @@ const hasPropsChange = (prevProps = {},nextProps = {}) => {
 }
 
 /**更新组件 */
-export function updateProps(instance,prevProps,nextProps){
-  //看属性是否变化：
-  //值是否变化，属性的个数是否变化
-  if(hasPropsChange(prevProps,nextProps)){
-    //更新值
-    for(let key in nextProps){
-      instance.props[key] = nextProps[key];
-    }
-    //删除可能多余的项
-    for(let key in instance.props){
-      if(!hasOwn(nextProps,key)){
-        delete instance.props[key];
-      }
+export function updateProps(prevProps,nextProps){
+  //更新值
+  for(let key in nextProps){
+    prevProps[key] = nextProps[key];
+  }
+  //删除可能多余的项
+  for(let key in prevProps){
+    if(!hasOwn(nextProps,key)){
+      delete prevProps[key];
     }
   }
 }

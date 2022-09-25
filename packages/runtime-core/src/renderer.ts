@@ -1,6 +1,6 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity';
 import { hasOwn, isNumber, isString, ShapeFlags } from '@vue/shared';
-import { createComponentInstance, setupComponent, updateProps } from './component';
+import { createComponentInstance, hasPropsChange, setupComponent, updateProps } from './component';
 import { initProps } from './componentProps';
 import { queueJob } from './scheduler';
 import { getSequence } from './sequence';
@@ -371,6 +371,14 @@ export function createRenderder(renderOptions){
     // 3.创建一个effect
     setupRenderEffect(instance,container,anchor);
   }
+
+  /**更新组件渲染 */
+  const updateComponentPreRender = (instance,next) => {
+    instance.next = null;//重置一下next
+    instance.vnode = next;//实例上最新的虚拟节点
+    updateProps(instance.props,next.props);
+  }
+
   /**创建组件渲染effect */
   const setupRenderEffect = (instance,container,anchor) => {
     let {render} = instance;
@@ -382,6 +390,12 @@ export function createRenderder(renderOptions){
         instance.subTree = subTree;
         instance.isMounted = true;
       }else{//组件内部更新
+        let {next} = instance;
+        if(next){
+          // 更新前需要拿到最新的属性来进行更新
+          updateComponentPreRender(instance,next);
+        }
+
         const subTree = render.call(instance.proxy);
         patch(instance.subTree,subTree,container,anchor);
         instance.subTree = subTree;
@@ -394,15 +408,32 @@ export function createRenderder(renderOptions){
     update();
   }
 
+  /**是否应该更新组件 */
+  const shouldUpdateComponent = (n1,n2) => {
+    const {props:prevProps,children:prevChildren} = n1;
+    const {props:nextProps,children:nextChildren} = n2;
+    if(prevProps === nextProps) return false;
+    if(prevChildren || nextChildren){
+      return true;
+    }
+    return hasPropsChange(prevProps,nextProps);
+  }
+
   /**组件更新 */
   const updateComponent = (n1,n2) => {
     // instance.props 是响应式的数据，而且可以更新，属性的更新会导致页面重新渲染
     // 对于组件而言，复用的是DOM元素，对于组件则是组件的实例
     const instance = (n2.component = n1.component);
-    const {props:prevProps} = n1;
-    const {props:nextProps} = n2;
-    //组件属性更新
-    updateProps(instance,prevProps,nextProps);
+    // const {props:prevProps} = n1;
+    // const {props:nextProps} = n2;
+    // //组件属性更新
+    // updateProps(instance,prevProps,nextProps);
+
+    //需要更新的时候调用组件的update进行强制更新
+    if(shouldUpdateComponent(n1,n2)){
+      instance.next = n2;//将新的虚拟节点放到next属性上
+      instance.update();//同一调用update进行更新
+    }
   }
 
   /**处理组件 */

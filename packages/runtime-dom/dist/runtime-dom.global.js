@@ -197,7 +197,8 @@ var VueRuntimeDOM = (() => {
       propsOptions: vnode.type.props,
       props: {},
       attrs: {},
-      proxy: null
+      proxy: null,
+      render: null
     };
     return instance;
   }
@@ -239,6 +240,7 @@ var VueRuntimeDOM = (() => {
         return console.warn("\u5FC5\u987B\u662F\u4E00\u4E2A\u51FD\u6570");
       instance.data = reactive(data.call(instance.proxy));
     }
+    instance.render = type.render;
   }
 
   // packages/runtime-core/src/scheduler.ts
@@ -537,20 +539,21 @@ var VueRuntimeDOM = (() => {
         patchChildren(n1, n2, container);
       }
     };
-    const publicPropertyMap2 = {
-      $attrs: (i) => i.attrs
-    };
     const mountComponent = (vnode, container, anchor) => {
       let instance = vnode.component = createComponentInstance(vnode);
       setupComponent(instance);
+      setupRenderEffect(instance, container, anchor);
+    };
+    const setupRenderEffect = (instance, container, anchor) => {
+      let { render: render3 } = instance;
       const componentUpdateFn = () => {
         if (!instance.isMounted) {
-          const subTree = render2.call(instance.proxy);
+          const subTree = render3.call(instance.proxy);
           patch(null, subTree, container, anchor);
           instance.subTree = subTree;
           instance.isMounted = true;
         } else {
-          const subTree = render2.call(instance.proxy);
+          const subTree = render3.call(instance.proxy);
           patch(instance.subTree, subTree, container, anchor);
           instance.subTree = subTree;
         }

@@ -17,6 +17,7 @@ export function createComponentInstance(vnode){
     props:{},
     attrs:{},
     proxy:null,//访问代理
+    render:null,//渲染器
   }
 
   return instance;
@@ -66,4 +67,6 @@ export function setupComponent(instance){
     if(!isFunction(data)) return console.warn("必须是一个函数");
     instance.data = reactive(data.call(instance.proxy));//pinia 源码就是 reactive({})作为组件的状态
   }
+  //记录用户定义的渲染函数
+  instance.render = type.render;
 }

@@ -1,5 +1,5 @@
 import { reactive } from '@vue/reactivity';
-import { hanOwn, isFunction } from './../../shared/src/index';
+import { hasOwn, isFunction } from './../../shared/src/index';
 import { initProps } from "./componentProps";
 
 /**根据虚拟节点创建组件实例 */
@@ -30,9 +30,9 @@ const publicPropertyMap = {
 const publicInstanceProxy = {
   get(target,key){
     let {data,props} = target;
-    if(data && hanOwn(data,key)){
+    if(data && hasOwn(data,key)){
       return data[key];
-    }else if(props && hanOwn(props,key)){
+    }else if(props && hasOwn(props,key)){
       return props[key];
     }
     //this.$attrs
@@ -43,12 +43,12 @@ const publicInstanceProxy = {
   },
   set(target,key,value){
     let {data,props} = target;
-    if(data && hanOwn(data,key)){
+    if(data && hasOwn(data,key)){
       data[key] = value;
       return true;
       // 用户操作的属性是代理对象，这里被屏蔽了
       // 但是可以通过instance.props拿到真实的porps
-    }else if(props && hanOwn(props,key)){
+    }else if(props && hasOwn(props,key)){
       console.warn('不能修改props中的数据：' + (key as string));
       return false;
     }
@@ -69,4 +69,41 @@ export function setupComponent(instance){
   }
   //记录用户定义的渲染函数
   instance.render = type.render;
+}
+
+/**对比属性是否变化*/
+const hasPropsChange = (prevProps = {},nextProps = {}) => {
+  const nextKeys = Object.keys(nextProps);
+  // 属性的个数是否变化
+  if(nextKeys.length !== Object.keys(prevProps).length){
+    return true;
+  }
+
+  // 值是否变化
+  for(let i = 0; i < nextKeys.length;i++){
+    const key = nextKeys[i];
+    if(nextProps[key] !== prevProps[key]){
+      return true;
+    }
+  }
+  return false
+
+}
+
+/**更新组件 */
+export function updateProps(instance,prevProps,nextProps){
+  //看属性是否变化：
+  //值是否变化，属性的个数是否变化
+  if(hasPropsChange(prevProps,nextProps)){
+    //更新值
+    for(let key in nextProps){
+      instance.props[key] = nextProps[key];
+    }
+    //删除可能多余的项
+    for(let key in instance.props){
+      if(!hasOwn(nextProps,key)){
+        delete instance.props[key];
+      }
+    }
+  }
 }

@@ -1,5 +1,5 @@
 import { reactive } from '@vue/reactivity';
-import { hanOwn } from "@vue/shared";
+import { hasOwn } from "@vue/shared";
 
 export function initProps(instance,rawProps){
   const props = {};
@@ -11,7 +11,7 @@ export function initProps(instance,rawProps){
   if(rawProps){
     for(let key in rawProps){
       let value = rawProps[key];
-      if(hanOwn(options,key)){
+      if(hasOwn(options,key)){
         props[key] = value;
       }else{
         attrs[key] = value;

@@ -1,6 +1,6 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity';
-import { hanOwn, isString, ShapeFlags } from '@vue/shared';
-import { createComponentInstance, setupComponent } from './component';
+import { hasOwn, isNumber, isString, ShapeFlags } from '@vue/shared';
+import { createComponentInstance, setupComponent, updateProps } from './component';
 import { initProps } from './componentProps';
 import { queueJob } from './scheduler';
 import { getSequence } from './sequence';
@@ -27,7 +27,7 @@ export function createRenderder(renderOptions){
    * @returns 
    */
   const normalize = (children,i) => {
-    if(isString(children[i])){
+    if(isString(children[i])||isNumber(children[i])){
       let vnode = createVnode(Text,null,children[i]);
       children[i] = vnode;
     }
@@ -394,12 +394,24 @@ export function createRenderder(renderOptions){
     update();
   }
 
+  /**组件更新 */
+  const updateComponent = (n1,n2) => {
+    // instance.props 是响应式的数据，而且可以更新，属性的更新会导致页面重新渲染
+    // 对于组件而言，复用的是DOM元素，对于组件则是组件的实例
+    const instance = (n2.component = n1.component);
+    const {props:prevProps} = n1;
+    const {props:nextProps} = n2;
+    //组件属性更新
+    updateProps(instance,prevProps,nextProps);
+  }
+
   /**处理组件 */
   const processComponent = (n1,n2,container,anchor = null) => {
     if(n1 == null){
       mountComponent(n2,container,anchor);
     }else{
       //组件更新靠的是props
+      updateComponent(n1,n2);
     }
   }
 

@@ -20,7 +20,7 @@ export const isArray:BoolFun = Array.isArray;
 export const assign = Object.assign;
 
 const hasOwnProperty = Object.prototype.hasOwnProperty;
-export const hanOwn = (value,key) => hasOwnProperty.call(value,key);
+export const hasOwn = (value,key) => hasOwnProperty.call(value,key);
 
 /**vue3提供的形状标识 */
 export const enum ShapeFlags {

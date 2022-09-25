@@ -119,12 +119,15 @@ var VueRuntimeDOM = (() => {
   var isString = (val) => {
     return typeof val === "string";
   };
+  var isNumber = (val) => {
+    return typeof val === "number";
+  };
   var isFunction = (val) => {
     return typeof val === "function";
   };
   var isArray = Array.isArray;
   var hasOwnProperty = Object.prototype.hasOwnProperty;
-  var hanOwn = (value, key) => hasOwnProperty.call(value, key);
+  var hasOwn = (value, key) => hasOwnProperty.call(value, key);
 
   // packages/reactivity/src/baseHandler.ts
   var mutableHandlers = {
@@ -175,7 +178,7 @@ var VueRuntimeDOM = (() => {
     if (rawProps) {
       for (let key in rawProps) {
         let value = rawProps[key];
-        if (hanOwn(options, key)) {
+        if (hasOwn(options, key)) {
           props[key] = value;
         } else {
           attrs[key] = value;
@@ -208,9 +211,9 @@ var VueRuntimeDOM = (() => {
   var publicInstanceProxy = {
     get(target, key) {
       let { data, props } = target;
-      if (data && hanOwn(data, key)) {
+      if (data && hasOwn(data, key)) {
         return data[key];
-      } else if (props && hanOwn(props, key)) {
+      } else if (props && hasOwn(props, key)) {
         return props[key];
       }
       let getter = publicPropertyMap[key];
@@ -220,10 +223,10 @@ var VueRuntimeDOM = (() => {
     },
     set(target, key, value) {
       let { data, props } = target;
-      if (data && hanOwn(data, key)) {
+      if (data && hasOwn(data, key)) {
         data[key] = value;
         return true;
-      } else if (props && hanOwn(props, key)) {
+      } else if (props && hasOwn(props, key)) {
         console.warn("\u4E0D\u80FD\u4FEE\u6539props\u4E2D\u7684\u6570\u636E\uFF1A" + key);
         return false;
       }
@@ -241,6 +244,31 @@ var VueRuntimeDOM = (() => {
       instance.data = reactive(data.call(instance.proxy));
     }
     instance.render = type.render;
+  }
+  var hasPropsChange = (prevProps = {}, nextProps = {}) => {
+    const nextKeys = Object.keys(nextProps);
+    if (nextKeys.length !== Object.keys(prevProps).length) {
+      return true;
+    }
+    for (let i = 0; i < nextKeys.length; i++) {
+      const key = nextKeys[i];
+      if (nextProps[key] !== prevProps[key]) {
+        return true;
+      }
+    }
+    return false;
+  };
+  function updateProps(instance, prevProps, nextProps) {
+    if (hasPropsChange(prevProps, nextProps)) {
+      for (let key in nextProps) {
+        instance.props[key] = nextProps[key];
+      }
+      for (let key in instance.props) {
+        if (!hasOwn(nextProps, key)) {
+          delete instance.props[key];
+        }
+      }
+    }
   }
 
   // packages/runtime-core/src/scheduler.ts
@@ -357,7 +385,7 @@ var VueRuntimeDOM = (() => {
       patchProp: hostPatchProp
     } = renderOptions2;
     const normalize = (children, i) => {
-      if (isString(children[i])) {
+      if (isString(children[i]) || isNumber(children[i])) {
         let vnode = createVnode(Text, null, children[i]);
         children[i] = vnode;
       }
@@ -562,10 +590,17 @@ var VueRuntimeDOM = (() => {
       let update = instance.update = effect2.run.bind(effect2);
       update();
     };
+    const updateComponent = (n1, n2) => {
+      const instance = n2.component = n1.component;
+      const { props: prevProps } = n1;
+      const { props: nextProps } = n2;
+      updateProps(instance, prevProps, nextProps);
+    };
     const processComponent = (n1, n2, container, anchor = null) => {
       if (n1 == null) {
         mountComponent(n2, container, anchor);
       } else {
+        updateComponent(n1, n2);
       }
     };
     const patch = (n1, n2, container, anchor = null) => {

@@ -137,3 +137,11 @@ const args = require('minimist')(process.argv.slice(2));
 + 运行时核心（不依赖于平台的 browser test 小程序 app canvas...）靠的是 虚拟DOM
 + 针对不同的平台的运行时（Vue针对的是浏览器平台）
 + 渲染器
+
+
+## setup函数的作用
+组件的render函数每次更新时就会重新执行，但是setup函数只会在组件挂载的时候执行一次
++ setup 函数是 composition API的入口
++ 可以在函数内部编写逻辑，解决Vue2中反复横跳的问题
++ setup返回函数时为组件的render函数，返回对象是对象中的数据将暴露给模板使用
++ setup函数的参数为 props、context（{slots,emit,attrs,expose}）

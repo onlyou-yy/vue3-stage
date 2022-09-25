@@ -11,31 +11,48 @@
   <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
   <script src="./runtime-dom.global.js"></script>
   <script>
-    const {render,h,Text,Fragment} = VueRuntimeDOM;
+    const {render,h,Text,Fragment,ref} = VueRuntimeDOM;
 
-    const MyComponent = {
+    const VueComponent = {
       props:{
         address:String
       },
-      render(){
-        return h(Text,this.address);
-      }
-    }
-
-    const VueComponent = {
-      data(){
-        return {
-          flag:true,
+      setup(props){
+        const name = ref("jack");
+        const age = ref('12');
+        setTimeout(()=>{
+          age.value++;
+        },1000)
+        return {//这个对象会帮你去 .value (proxyRefs)
+          name,
+          age,
+          addr:props.address,
         }
       },
       render(){
-        return h(Fragment,[
-          h('button',{onClick:()=>{this.flag = !this.flag}},'切换'),
-          h(MyComponent,{address:this.flag ? 'eath':'moon'}),
-        ])
+        return h('p',this.name+this.age+this.addr)
       }
     }
-    render(h(VueComponent,{address:"xxx",a:1,b:2}),app);
+
+    // const VueComponent = {
+    //   props:{
+    //     address:String
+    //   },
+    //   setup(props){
+    //     const name = ref("jack");
+    //     const age = ref(12);
+    //     setTimeout(()=>{
+    //       age.value++;
+    //     },1000)
+    //     //返回render函数需要正常的使用.value
+    //     return () => {
+    //       return h(Fragment,[
+    //         h('p',[name.value,age.value,props.address]),
+    //       ])
+    //     }
+    //   }
+    // }
+    render(h(VueComponent,{address:"xxx"}),app);
   </script>
 </body>
 </html>

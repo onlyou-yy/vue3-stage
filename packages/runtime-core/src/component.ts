@@ -1,5 +1,5 @@
-import { reactive } from '@vue/reactivity';
-import { hasOwn, isFunction } from './../../shared/src/index';
+import { proxyRefs, reactive } from '@vue/reactivity';
+import { hasOwn, isFunction, isObject } from './../../shared/src/index';
 import { initProps } from "./componentProps";
 
 /**根据虚拟节点创建组件实例 */
@@ -18,6 +18,7 @@ export function createComponentInstance(vnode){
     attrs:{},
     proxy:null,//访问代理
     render:null,//渲染器
+    setupState:{},//setup函数返回的对象
   }
 
   return instance;
@@ -29,9 +30,11 @@ const publicPropertyMap = {
 }
 const publicInstanceProxy = {
   get(target,key){
-    let {data,props} = target;
+    let {data,props,setupState} = target;
     if(data && hasOwn(data,key)){
       return data[key];
+    }else if(setupState && hasOwn(setupState,key)){
+      return setupState[key];
     }else if(props && hasOwn(props,key)){
       return props[key];
     }
@@ -42,12 +45,15 @@ const publicInstanceProxy = {
     }
   },
   set(target,key,value){
-    let {data,props} = target;
+    let {data,props,setupState} = target;
     if(data && hasOwn(data,key)){
       data[key] = value;
       return true;
       // 用户操作的属性是代理对象，这里被屏蔽了
       // 但是可以通过instance.props拿到真实的porps
+    }else if(setupState && hasOwn(setupState,key)){
+      setupState[key] = value;
+      return true;
     }else if(props && hasOwn(props,key)){
       console.warn('不能修改props中的数据：' + (key as string));
       return false;
@@ -67,8 +73,20 @@ export function setupComponent(instance){
     if(!isFunction(data)) return console.warn("必须是一个函数");
     instance.data = reactive(data.call(instance.proxy));//pinia 源码就是 reactive({})作为组件的状态
   }
-  //记录用户定义的渲染函数
-  instance.render = type.render;
+  let setup = type.setup;
+  if(setup){
+    const setupContext = {};
+    const setupResult = setup(instance.props,setupContext);
+    if(isFunction(setupResult)){
+      instance.render = setupResult;
+    }else if(isObject(setupResult)){
+      instance.setupState = proxyRefs(setupResult);
+    }
+  }
+  if(!instance.render){
+    //记录用户定义的渲染函数
+    instance.render = type.render;
+  }
 }
 
 /**对比属性是否变化*/

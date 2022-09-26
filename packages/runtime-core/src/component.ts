@@ -1,5 +1,5 @@
 import { proxyRefs, reactive } from '@vue/reactivity';
-import { hasOwn, isFunction, isObject } from './../../shared/src/index';
+import { hasOwn, isFunction, isObject, ShapeFlags } from '@vue/shared';
 import { initProps } from "./componentProps";
 
 /**根据虚拟节点创建组件实例 */
@@ -19,6 +19,7 @@ export function createComponentInstance(vnode){
     proxy:null,//访问代理
     render:null,//渲染器
     setupState:{},//setup函数返回的对象
+    slots:{},//插槽相关内容
   }
 
   return instance;
@@ -26,7 +27,8 @@ export function createComponentInstance(vnode){
 
 /**公开的属性 */
 const publicPropertyMap = {
-  $attrs:(i) => i.attrs
+  $attrs:(i) => i.attrs,
+  $slots:(i) => i.slots,
 }
 const publicInstanceProxy = {
   get(target,key){
@@ -61,11 +63,19 @@ const publicInstanceProxy = {
     return true;
   }
 }
+
+function initSlots(instance,children){
+  if(instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN){
+    instance.slots = children;
+  }
+}
 /**给组件实例赋值 */
 export function setupComponent(instance){
-  let {props,type} = instance.vnode;//type就是用户定义的组件
+  let {props,type,children} = instance.vnode;//type就是用户定义的组件
   // 初始化props
   initProps(instance,props);
+  // 初始化插槽
+  initSlots(instance,children);
   instance.proxy = new Proxy(instance,publicInstanceProxy)
 
   let data = type.data;
@@ -75,7 +85,16 @@ export function setupComponent(instance){
   }
   let setup = type.setup;
   if(setup){
-    const setupContext = {};
+    const setupContext = {
+      emit:(event,...args) => {//事件的实现原理
+        let eventName = `on${event[0].toUpperCase()}${event.slice(1)}`;
+        //虚拟节点的属性有存放props
+        let handler = instance.vnode.props[eventName];
+        handler && handler(...args);
+      },
+      attrs:instance.attrs,
+      slots:instance.slots,
+    };
     const setupResult = setup(instance.props,setupContext);
     if(isFunction(setupResult)){
       instance.render = setupResult;

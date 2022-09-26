@@ -40,6 +40,8 @@ export function createVnode(type,props = {},children = null){
     let type = 0;//默认为文本
     if(isArray(children)){
       type = ShapeFlags.ARRAY_CHILDREN;
+    }else if(isObject(children)){
+      type = ShapeFlags.SLOTS_CHILDREN;//这个组件带有插槽
     }else{
       children = String(children);
       type = ShapeFlags.TEXT_CHILDREN;

@@ -1,5 +1,5 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity';
-import { hasOwn, invokeArrayFns, isNumber, isString, ShapeFlags } from '@vue/shared';
+import { hasOwn, invokeArrayFns, isNumber, isString, PatchFlags, ShapeFlags } from '@vue/shared';
 import { createComponentInstance, hasPropsChange, setupComponent, updateProps } from './component';
 import { initProps } from './componentProps';
 import { queueJob } from './scheduler';
@@ -313,20 +313,42 @@ export function createRenderder(renderOptions){
     }
   }
 
+  /**对比动态节点 */
+  const patchBlockChildren = (n1,n2) => {
+    for(let i = 0;i < n2.dynamicChildren.length;i++){
+      patchElement(n1.dynamicChildren[i],n2.dynamicChildren[i]);
+    }
+  }
+
   /**
    * 对比元素
    * @param n1 
    * @param n2 
    * @param container 
    */
-  const patchElement = (n1,n2,container) => {
+  const patchElement = (n1,n2) => {
     //先复用节点，再比较属性，在比较儿子
     let el = n2.el = n1.el;
     
     let oldProps = n1.props || {};
     let newProps = n2.props || {};
-    patchProps(oldProps,newProps,el);
-    patchChildren(n1,n2,el);
+
+    let {patchFlag} = n2;
+    if(patchFlag & PatchFlags.CLASS){
+      if(oldProps.class !== newProps.class){
+        hostPatchProp(el,'class',null,newProps.class);
+      }
+    }else{
+      patchProps(oldProps,newProps,el);
+    }
+
+    if(n2.dynamicChildren){
+      //只对比动态节点
+      patchBlockChildren(n1,n2);
+    }else{
+      //全量比对
+      patchChildren(n1,n2,el);
+    }
   }
 
   /**
@@ -344,7 +366,7 @@ export function createRenderder(renderOptions){
       //如果前后完成没关系，删除老的 添加新的
       //老的和新的一样，复用，属性可能不一样，在对比属性，更新属性
       //比较子节点
-      patchElement(n1,n2,container);
+      patchElement(n1,n2);
     }
   }
 
@@ -390,7 +412,7 @@ export function createRenderder(renderOptions){
           invokeArrayFns(bm);
         }
 
-        const subTree = render.call(instance.proxy);//state作为this，后续this会改变
+        const subTree = render.call(instance.proxy,instance.proxy);//state作为this，后续this会改变
         patch(null,subTree,container,anchor);//创建了subTree的真实节点并且插入了
         
         if(m){
@@ -408,7 +430,7 @@ export function createRenderder(renderOptions){
         if(bu){
           invokeArrayFns(bu);
         }
-        const subTree = render.call(instance.proxy);
+        const subTree = render.call(instance.proxy,instance.proxy);
         patch(instance.subTree,subTree,container,anchor);
         instance.subTree = subTree;
         if(u){

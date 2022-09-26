@@ -15,42 +15,29 @@
     onBeforeMount,
     onMounted,
     onBeforeUpdate,
-    onUpdated
+    onUpdated,
+    createElementVNode: _createElementVNode, 
+    toDisplayString: _toDisplayString, 
+    openBlock: _openBlock, 
+    createElementBlock: _createElementBlock
     } = VueRuntimeDOM;
 
-    const useCounter = () => {
-      let state = reactive({count:1});
-      let handleClick = () => {
-        state.count++;
-      }
-      //生命周期钩子函数只能在setup中使用
-      //生命周期会自动和当前使用的组件关联
-      onBeforeMount(()=>{
-        console.log('onBeforeMount',getCurrentInstance());
-      })
-      onMounted(()=>{
-        console.log('onMounted');
-      })
-      onBeforeUpdate(()=>{
-        console.log('onBeforeUpdate');
-      })
-      onUpdated(()=>{
-        console.log('onUpdated');
-      })
-      return {state,handleClick};
-    }
-
+    // https://template-explorer.vuejs.org/
     const VueComponent = {
       setup(){
-        let {state,handleClick} = useCounter();
+        let state = reactive({name:'jack'})
+        setTimeout(()=>{state.name="rocy"},1000)
         return {
-          ...toRefs(state),
-          handleClick
+          state
         }
       },
-      render(){
-        console.log('render',this.count,this.handleClick);
-        return h('p',{onClick:this.handleClick},this.count.value);
+      render(_ctx){
+        let vnode = (_openBlock(), _createElementBlock("div", null, [
+          _createElementVNode("span", null, "Hello World"),
+          _createElementVNode("span", null, _toDisplayString(_ctx.state.name), 1 /* TEXT */)
+        ]))
+        console.log(vnode);
+        return vnode;
       }
     }
     

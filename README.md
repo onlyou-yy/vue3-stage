@@ -146,4 +146,7 @@ const args = require('minimist')(process.argv.slice(2));
 + setup返回函数时为组件的render函数，返回对象是对象中的数据将暴露给模板使用
 + setup函数的参数为 props、context（{slots,emit,attrs,expose}）
 
+## Vue3中的靶向更新
+在Vue2中DOM的diff更新是一层一层的去对比节点来确定更新的，当DOM树层级比较高的时候就会比消耗性能，而在Vue3中引入了靶向更新来解决这个问题，靶向更新可能明确知道要更新节点是哪个，之后就就可以直接进行对比，而不需要一层层的进行查找。靶向更新其实就是将引用了数据的节点进行保存，这一节点就会当数据发生改变的时候节点就会发生改变，所以可以快速定位到需要对应的位置。
+
 源码参考：[vue3-plain](https://github.com/yuanchaowhut/vue3-plain)

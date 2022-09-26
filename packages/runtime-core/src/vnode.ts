@@ -15,8 +15,9 @@ export function isSameVnode(n1,n2){
  * @param type 类型，有组件，元素，文本
  * @param props 属性
  * @param children 子节点
+ * @param patchFlag 动态子节点类型
  */
-export function createVnode(type,props = {},children = null){
+export function createVnode(type,props = {},children = null,patchFlag = 0){
   //组合方案 shapeFlag ，如果需要知道一个元素中包含的是多个儿子还是一个儿子，
   //可以采用标识来确定
 
@@ -34,6 +35,7 @@ export function createVnode(type,props = {},children = null){
     el:null,//虚拟节点上对应的真实节点，后续diff算法
     __v_isVnode:true,
     shapeFlag,
+    patchFlag,//动态节点标识，表示哪个类型会改变
   }
 
   if(children){
@@ -50,5 +52,38 @@ export function createVnode(type,props = {},children = null){
     vnode.shapeFlag |= type;
   }
 
+  //收集vnode
+  if(currentBlock && patchFlag > 0){
+    currentBlock.push(vnode);
+  }
+
   return vnode;
+}
+
+let currentBlock = null;
+/**创建当前block容器 */
+export function openBlock(){
+  // 收集多个动态节点
+  currentBlock = [];
+}
+
+/**给block填入内容
+ * @param patchFlag 动态节点类型，会在模版变异生产渲染函数的时候传入
+ * 调用这个函数生成的虚拟节点多出一个dynamicChildren属性，这个就是block的作用
+ * block可以收集所有后代动态节点，这样后续更新的时候就可以跳过静态节点，实现靶向更新
+ */
+export function createElementBlock(type,props,children,patchFlag){
+  return setupBlock(createVnode(type,props,children,patchFlag));
+}
+function setupBlock(vnode){
+  vnode.dynamicChildren = currentBlock;
+  currentBlock = null;
+  return vnode;
+}
+
+export { createVnode as createElementVNode }
+
+/**将值转化成字符串 */
+export function toDisplayString(val){
+  return isString(val) ? val : val == null ? '' : isObject(val) ? JSON.stringify(val) : String(val);
 }

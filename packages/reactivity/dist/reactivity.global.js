@@ -278,7 +278,7 @@ var VueReactivity = (() => {
       if (newValue !== this.rawValue) {
         this._value = toReactive(newValue);
         this.rawValue = newValue;
-        trackEffects(this.dep);
+        triggerEffects(this.dep);
       }
     }
   };

@@ -145,3 +145,5 @@ const args = require('minimist')(process.argv.slice(2));
 + 可以在函数内部编写逻辑，解决Vue2中反复横跳的问题
 + setup返回函数时为组件的render函数，返回对象是对象中的数据将暴露给模板使用
 + setup函数的参数为 props、context（{slots,emit,attrs,expose}）
+
+源码参考：[vue3-plain](https://github.com/yuanchaowhut/vue3-plain)

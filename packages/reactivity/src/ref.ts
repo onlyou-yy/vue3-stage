@@ -1,5 +1,5 @@
 import { isObject,isArray } from '@vue/shared';
-import { trackEffects } from './effect';
+import { trackEffects, triggerEffects } from './effect';
 import { reactive } from './reactive';
 
 
@@ -21,7 +21,7 @@ class RefImpl{
     if(newValue !== this.rawValue){
       this._value = toReactive(newValue);
       this.rawValue = newValue;
-      trackEffects(this.dep);
+      triggerEffects(this.dep);
     }
   }
 }

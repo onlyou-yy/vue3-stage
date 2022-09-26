@@ -2,6 +2,10 @@ import { proxyRefs, reactive } from '@vue/reactivity';
 import { hasOwn, isFunction, isObject, ShapeFlags } from '@vue/shared';
 import { initProps } from "./componentProps";
 
+export let currentInstance = null;
+export const setCurrentInstance = (instance) => currentInstance = instance;
+export const getCurrentInstance = () => currentInstance;
+
 /**根据虚拟节点创建组件实例 */
 export function createComponentInstance(vnode){
   //组件的实例
@@ -95,7 +99,11 @@ export function setupComponent(instance){
       attrs:instance.attrs,
       slots:instance.slots,
     };
+
+    setCurrentInstance(instance);
     const setupResult = setup(instance.props,setupContext);
+    setCurrentInstance(null);
+
     if(isFunction(setupResult)){
       instance.render = setupResult;
     }else if(isObject(setupResult)){

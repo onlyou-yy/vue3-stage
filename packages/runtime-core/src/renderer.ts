@@ -1,5 +1,5 @@
 import { reactive, ReactiveEffect } from '@vue/reactivity';
-import { hasOwn, isNumber, isString, ShapeFlags } from '@vue/shared';
+import { hasOwn, invokeArrayFns, isNumber, isString, ShapeFlags } from '@vue/shared';
 import { createComponentInstance, hasPropsChange, setupComponent, updateProps } from './component';
 import { initProps } from './componentProps';
 import { queueJob } from './scheduler';
@@ -385,20 +385,35 @@ export function createRenderder(renderOptions){
     //组件挂载和更新方法
     const componentUpdateFn = () => {
       if(!instance.isMounted){//挂载
+        let {bm,m} = instance;//生命周期
+        if(bm){
+          invokeArrayFns(bm);
+        }
+
         const subTree = render.call(instance.proxy);//state作为this，后续this会改变
         patch(null,subTree,container,anchor);//创建了subTree的真实节点并且插入了
+        
+        if(m){
+          invokeArrayFns(m);
+        }
+
         instance.subTree = subTree;
         instance.isMounted = true;
       }else{//组件内部更新
-        let {next} = instance;
+        let {next,bu,u} = instance;//生命周期
         if(next){
           // 更新前需要拿到最新的属性来进行更新
           updateComponentPreRender(instance,next);
         }
-
+        if(bu){
+          invokeArrayFns(bu);
+        }
         const subTree = render.call(instance.proxy);
         patch(instance.subTree,subTree,container,anchor);
         instance.subTree = subTree;
+        if(u){
+          invokeArrayFns(u);
+        }
       }
     }
     //queueJob处理多次更新情况,实现组件的异步更新

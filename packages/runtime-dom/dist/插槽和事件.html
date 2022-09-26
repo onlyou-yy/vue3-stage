@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app"></div>
+  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
+  <script src="./runtime-dom.global.js"></script>
+  <script>
+    const {render,h,Text,Fragment,ref} = VueRuntimeDOM;
+    // const VueComponent = {
+    //   props:{
+    //     address:String
+    //   },
+    //   setup(props,{emit}){
+    //     const name = ref("jack");
+    //     const age = ref(12);
+    //     //返回render函数需要正常的使用.value
+    //     return () => {
+    //       return h('p',{onClick:()=>{emit("xxx",name.value)}},name.value+age.value+props.address)
+    //     }
+    //   }
+    // }
+
+    //组件的插槽是一个对象，放着映射关系，渲染组件的时候去映射表中查找
+    const MyComponent = {
+      render(){
+        return h(Fragment,[
+          h('div',this.$slots.header()),
+          h('div',this.$slots.body()),
+        ])
+      }
+    }
+    const VueComponent = {
+      setup(props){
+        return () => {
+          //children如果是一个对象说明是组件的插槽
+          return h(MyComponent,null,{
+            header:()=>h('p','header'),
+            body:()=>h('p','body'),
+          })
+        }
+      }
+    }
+    render(h(VueComponent,{onXxx:(value)=>{alert(value)}}),app);
+  </script>
+</body>
+</html>

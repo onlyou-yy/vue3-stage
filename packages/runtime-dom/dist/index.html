@@ -11,42 +11,50 @@
   <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
   <script src="./runtime-dom.global.js"></script>
   <script>
-    const {render,h,Text,Fragment,ref} = VueRuntimeDOM;
-    // const VueComponent = {
-    //   props:{
-    //     address:String
-    //   },
-    //   setup(props,{emit}){
-    //     const name = ref("jack");
-    //     const age = ref(12);
-    //     //返回render函数需要正常的使用.value
-    //     return () => {
-    //       return h('p',{onClick:()=>{emit("xxx",name.value)}},name.value+age.value+props.address)
-    //     }
-    //   }
-    // }
+    const {render,h,Text,Fragment,ref,reactive,toRefs,getCurrentInstance,
+    onBeforeMount,
+    onMounted,
+    onBeforeUpdate,
+    onUpdated
+    } = VueRuntimeDOM;
 
-    //组件的插槽是一个对象，放着映射关系，渲染组件的时候去映射表中查找
-    const MyComponent = {
-      render(){
-        return h(Fragment,[
-          h('div',this.$slots.header()),
-          h('div',this.$slots.body()),
-        ])
+    const useCounter = () => {
+      let state = reactive({count:1});
+      let handleClick = () => {
+        state.count++;
       }
+      //生命周期钩子函数只能在setup中使用
+      //生命周期会自动和当前使用的组件关联
+      onBeforeMount(()=>{
+        console.log('onBeforeMount',getCurrentInstance());
+      })
+      onMounted(()=>{
+        console.log('onMounted');
+      })
+      onBeforeUpdate(()=>{
+        console.log('onBeforeUpdate');
+      })
+      onUpdated(()=>{
+        console.log('onUpdated');
+      })
+      return {state,handleClick};
     }
+
     const VueComponent = {
-      setup(props){
-        return () => {
-          //children如果是一个对象说明是组件的插槽
-          return h(MyComponent,null,{
-            header:()=>h('p','header'),
-            body:()=>h('p','body'),
-          })
+      setup(){
+        let {state,handleClick} = useCounter();
+        return {
+          ...toRefs(state),
+          handleClick
         }
+      },
+      render(){
+        console.log('render',this.count,this.handleClick);
+        return h('p',{onClick:this.handleClick},this.count.value);
       }
     }
-    render(h(VueComponent,{onXxx:(value)=>{alert(value)}}),app);
+    
+    render(h(VueComponent),app);
   </script>
 </body>
 </html>

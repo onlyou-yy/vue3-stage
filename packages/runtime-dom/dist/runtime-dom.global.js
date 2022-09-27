@@ -28,9 +28,9 @@ var VueRuntimeDOM = (() => {
     computed: () => computed,
     createComponentInstance: () => createComponentInstance,
     createElementBlock: () => createElementBlock,
-    createElementVNode: () => createVnode,
+    createElementVNode: () => createVNode,
     createRenderder: () => createRenderder,
-    createVnode: () => createVnode,
+    createVNode: () => createVNode,
     currentInstance: () => currentInstance,
     effect: () => effect,
     getCurrentInstance: () => getCurrentInstance,
@@ -575,7 +575,7 @@ var VueRuntimeDOM = (() => {
   function isSameVnode(n1, n2) {
     return n1.type === n2.type && n1.key === n2.key;
   }
-  function createVnode(type, props = {}, children = null, patchFlag = 0) {
+  function createVNode(type, props = {}, children = null, patchFlag = 0) {
     let shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
     const vnode = {
       type,
@@ -609,7 +609,7 @@ var VueRuntimeDOM = (() => {
     currentBlock = [];
   }
   function createElementBlock(type, props, children, patchFlag) {
-    return setupBlock(createVnode(type, props, children, patchFlag));
+    return setupBlock(createVNode(type, props, children, patchFlag));
   }
   function setupBlock(vnode) {
     vnode.dynamicChildren = currentBlock;
@@ -636,7 +636,7 @@ var VueRuntimeDOM = (() => {
     } = renderOptions2;
     const normalize = (children, i) => {
       if (isString(children[i]) || isNumber(children[i])) {
-        let vnode = createVnode(Text, null, children[i]);
+        let vnode = createVNode(Text, null, children[i]);
         children[i] = vnode;
       }
       return children[i];
@@ -949,11 +949,11 @@ var VueRuntimeDOM = (() => {
     if (l === 2) {
       if (isObject(propsChildren) && !isArray(propsChildren)) {
         if (isVnode(propsChildren)) {
-          return createVnode(type, null, [propsChildren]);
+          return createVNode(type, null, [propsChildren]);
         }
-        return createVnode(type, propsChildren);
+        return createVNode(type, propsChildren);
       } else {
-        return createVnode(type, null, propsChildren);
+        return createVNode(type, null, propsChildren);
       }
     } else {
       if (l > 3) {
@@ -961,7 +961,7 @@ var VueRuntimeDOM = (() => {
       } else if (l === 3 && isVnode(children)) {
         children = [children];
       }
-      return createVnode(type, propsChildren, children);
+      return createVNode(type, propsChildren, children);
     }
   }
 

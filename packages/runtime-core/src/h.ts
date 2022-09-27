@@ -8,7 +8,7 @@
 //h('div',null,[h('span','123')])
 
 import { isArray, isObject } from "@vue/shared";
-import { createVnode, isVnode } from "./vnode";
+import { createVNode, isVnode } from "./vnode";
 
 /**
  * 创建虚拟节点
@@ -27,11 +27,11 @@ export function h(type,propsChildren,children){
     //h('div','hello')
     if(isObject(propsChildren) && !isArray(propsChildren)){
       if(isVnode(propsChildren)){//虚拟节点包装成数组
-        return createVnode(type,null,[propsChildren]);
+        return createVNode(type,null,[propsChildren]);
       }
-      return createVnode(type,propsChildren);//属性
+      return createVNode(type,propsChildren);//属性
     }else{
-      return createVnode(type,null,propsChildren);//数组或文本
+      return createVNode(type,null,propsChildren);//数组或文本
     }
   }else{
     if(l > 3){
@@ -41,6 +41,6 @@ export function h(type,propsChildren,children){
       children = [children];
     }
     // 其他
-    return createVnode(type,propsChildren,children)
+    return createVNode(type,propsChildren,children)
   }
 }

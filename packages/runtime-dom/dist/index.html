@@ -8,8 +8,8 @@
 </head>
 <body>
   <div id="app"></div>
-  <!-- <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script> -->
-  <script src="./runtime-dom.global.js"></script>
+  <script src="../../../node_modules/@vue/runtime-dom/dist/runtime-dom.global.js"></script>
+  <!-- <script src="./runtime-dom.global.js"></script> -->
   <script>
     const {render,h,Text,Fragment,ref,reactive,toRefs,getCurrentInstance,
     onBeforeMount,
@@ -19,25 +19,107 @@
     createElementVNode: _createElementVNode, 
     toDisplayString: _toDisplayString, 
     openBlock: _openBlock, 
-    createElementBlock: _createElementBlock
+    createElementBlock: _createElementBlock,
+    createTextVNode:_createTextVNode
     } = VueRuntimeDOM;
 
     // https://template-explorer.vuejs.org/
     const VueComponent = {
       setup(){
-        let state = reactive({name:'jack'})
-        setTimeout(()=>{state.name="rocy"},1000)
+        let state = reactive({aaa:1,bbb:2,ccc:3,className:'xx',flag:true})
+        setTimeout(()=>{
+          state.className="rocy";
+          state.flag = false;
+        },5000)
         return {
-          state
+          ...toRefs(state),
         }
       },
       render(_ctx){
-        let vnode = (_openBlock(), _createElementBlock("div", null, [
+        let template1 = `
+        <div>
+          <span>Hello World</span>
+          <div>{{aaa}}</div>
+          <p :class="className">
+            {{bbb}}
+            <span>{{ccc}}</span>
+          </p>
+        </div>
+        `;
+        let vnode1 = (_openBlock(), _createElementBlock("div", null, [
           _createElementVNode("span", null, "Hello World"),
-          _createElementVNode("span", null, _toDisplayString(_ctx.state.name), 1 /* TEXT */)
+          _createElementVNode("div", null, _toDisplayString(_ctx.aaa), 1 /* TEXT */),
+          _createElementVNode("p", {
+            class: _ctx.className
+          }, [
+            _createTextVNode(_toDisplayString(_ctx.bbb) + " ", 1 /* TEXT */),
+            _createElementVNode("span", null, _toDisplayString(_ctx.ccc), 1 /* TEXT */)
+          ], 2 /* CLASS */)
         ]))
-        console.log(vnode);
-        return vnode;
+        console.log(vnode1);
+        //动态节点是 [div.text.aaa,text.bbb,span.text.ccc,p.class.className]
+        //那么当数据变化的时候就会将动态节点的数组进行逐一比较
+        //可以发现在当前情况下前后对比的时候动态节点数组的长度是一致的，
+
+        //但是在使用了 v-if 或者 v-for 的情况下就不一样了，因为生成的动态节点树的长度可能不一样
+        //这种情况下会创建动态节点树（有不稳定结构的都要是动态节点（block））
+        //将每一个使用了 v-if/v-else/v-else-if 的节点及其父节点都当成是一个动态节点
+        //其父节点的动态节点列表可以收集子动态节点，
+        //而使用了 v-if/v-else/v-else-if 的节点（无论是否相同）都会通过key标记为不通节点
+        //这样就可以形成一个动态节点树
+        let template2 = `
+        <div>
+          <span>Hello World</span>
+          <div v-if="flag">
+            <span>{{aaa}}</span>
+          </div>
+          <p v-else>
+            <span>{{bbb}}</span>
+          </p>
+        </div>
+        `;
+        let vnode2 = (_openBlock(), _createElementBlock("div", null, [
+          _createElementVNode("span", null, "Hello World"),
+          _ctx.flag
+            ? (_openBlock(), _createElementBlock("div", { key: 0 }, [
+                _createElementVNode("span", null, _toDisplayString(_ctx.aaa), 1 /* TEXT */)
+              ]))
+            : (_openBlock(), _createElementBlock("p", { key: 1 }, [
+                _createElementVNode("span", null, _toDisplayString(_ctx.bbb), 1 /* TEXT */)
+              ]))
+        ]))
+        console.log(vnode2);
+
+        //使用v-for的情况，当要遍历的数据是一个动态的值（长度不确定）
+        //使用v-for的节点也会创建block，
+        //如果不创建，那在收集动态节点的时候就会将v-for的所有节点和其他层的节点一层收集起来
+        //如果是一个静态的值（长度确定），如 arr = 3,时使用v-for的节点可以不创建block，
+        let template3 = `
+        <div>
+          <div v-for="item in arr">{{item}}</div>
+        </div>
+        `;
+        let vnode3 = (_openBlock(), _createElementBlock("div", null, [
+          (_openBlock(true), _createElementBlock(_Fragment, null, _renderList(arr, (item) => {
+            return (_openBlock(), _createElementBlock("div", null, _toDisplayString(item), 1 /* TEXT */))
+          }), 256 /* UNKEYED_FRAGMENT */))
+        ]))
+        console.log(vnode3);
+
+        // vue3 添加了在模版编译模块中提供了静态提升的优化
+        // 静态提升在上面template1中有一些静态的节点 <span>Hello World</span> 
+        // 在转化成虚拟节点的时候每次都会转化调用 _createElementVNode("span", null, "Hello World")
+        // 这个函数每次都会是一样，不会改变，所以在Vue3中会将这个函数 _createElementVNode("span", null, "Hello World") 的结果用一个变量存储起来
+        // 之后再次生成虚拟节点的时候直接使用即可，而不用再次创建。
+        // 静态提升包括对节点，属性，事件的静态提升。
+
+        // 所以Vue3的模版编译优化包括
+        // 增添了patchFlag来标识哪些节点是动态的
+        // 使用 block 来收集动态节点，为不稳定结构也创建 block 节点，实现 blockTree 做得靶向更新
+        // 使用静态提升优化（属性的提升，虚拟节点的提升，函数的缓存，预解析字符串）
+        // 写模版的性能比直接写h函数会更好一些（可以手写 openBlock，createElementBlock 等）
+
+        return vnode1;
       }
     }
     

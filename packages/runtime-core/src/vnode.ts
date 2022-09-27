@@ -17,7 +17,7 @@ export function isSameVnode(n1,n2){
  * @param children 子节点
  * @param patchFlag 动态子节点类型
  */
-export function createVnode(type,props = {},children = null,patchFlag = 0){
+export function createVNode(type,props = {},children = null,patchFlag = 0){
   //组合方案 shapeFlag ，如果需要知道一个元素中包含的是多个儿子还是一个儿子，
   //可以采用标识来确定
 
@@ -60,6 +60,12 @@ export function createVnode(type,props = {},children = null,patchFlag = 0){
   return vnode;
 }
 
+/**
+ * 临时动态节点容器
+ * 
+ * 作用是用来收集动态节点
+ * 收集的动态节点是以树为单位来收集的，特点是比较的时候可以只动态节点
+ */
 let currentBlock = null;
 /**创建当前block容器 */
 export function openBlock(){
@@ -69,11 +75,12 @@ export function openBlock(){
 
 /**给block填入内容
  * @param patchFlag 动态节点类型，会在模版变异生产渲染函数的时候传入
+ * 
  * 调用这个函数生成的虚拟节点多出一个dynamicChildren属性，这个就是block的作用
  * block可以收集所有后代动态节点，这样后续更新的时候就可以跳过静态节点，实现靶向更新
  */
 export function createElementBlock(type,props,children,patchFlag){
-  return setupBlock(createVnode(type,props,children,patchFlag));
+  return setupBlock(createVNode(type,props,children,patchFlag));
 }
 function setupBlock(vnode){
   vnode.dynamicChildren = currentBlock;
@@ -81,9 +88,15 @@ function setupBlock(vnode){
   return vnode;
 }
 
-export { createVnode as createElementVNode }
+export { createVNode as createElementVNode }
+
+/**创建文本虚拟节点 */
+export function createTextVNode(text) {
+  return createVNode(Text, {}, text);
+}
 
 /**将值转化成字符串 */
 export function toDisplayString(val){
   return isString(val) ? val : val == null ? '' : isObject(val) ? JSON.stringify(val) : String(val);
 }
+

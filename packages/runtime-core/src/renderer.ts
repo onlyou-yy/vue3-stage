@@ -4,7 +4,7 @@ import { createComponentInstance, hasPropsChange, setupComponent, updateProps } 
 import { initProps } from './componentProps';
 import { queueJob } from './scheduler';
 import { getSequence } from './sequence';
-import { createVnode, isSameVnode, Text, Fragment } from './vnode';
+import { createVNode, isSameVnode, Text, Fragment } from './vnode';
 /**创建渲染器 */
 export function createRenderder(renderOptions){
 
@@ -28,7 +28,7 @@ export function createRenderder(renderOptions){
    */
   const normalize = (children,i) => {
     if(isString(children[i])||isNumber(children[i])){
-      let vnode = createVnode(Text,null,children[i]);
+      let vnode = createVNode(Text,null,children[i]);
       children[i] = vnode;
     }
     return children[i];

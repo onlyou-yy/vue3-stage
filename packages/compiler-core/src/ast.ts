@@ -1,20 +1,30 @@
 /**ast 节点类型 */
 export const enum NodeTypes {
-  ROOT,//根节点
-  ELEMENT,//元素
-  TEXT,//文本
-  COMMENT,//注释
-  SIMPLE_EXPRESSION,//简单表达式 :src="xx"
-  INTERPOLATION,//模版表达式 {{aa}}
+  /**根节点 */
+  ROOT,
+  /**元素 */
+  ELEMENT,
+  /**文本 */
+  TEXT,
+  /**注释 */
+  COMMENT,
+  /**简单表达式 :src="xx" */
+  SIMPLE_EXPRESSION,
+  /**模版表达式 {{aa}} */
+  INTERPOLATION,
   ATTRIBUTE,
   DIRECTIVE,
   //containers
-  COMPOUND_EXPRESSION,//复合表达式 {{aa}} abc
+  /**复合表达式 {{aa}} abc */
+  COMPOUND_EXPRESSION,
   IF,
   IF_BRANCH,
   FOR,
-  TEXT_CALL,//文本调用
+  /**文本调用 */
+  TEXT_CALL,
   //codegen
-  VNODE_CALL,//元素调用
-  JS_CALL_EXPRESSION,//js调用表达式
+  /**元素调用 */
+  VNODE_CALL,
+  /**js调用表达式 */
+  JS_CALL_EXPRESSION,
 }

@@ -14,9 +14,17 @@
 
     // 解析规则就是一个个字符进行判断，并且解析完毕后删除已经解析过的字符串
     // 
-    let r = compiler(`a 
+    // let r = compiler(`a 
     
-    bc <a></a> {{abc}}`);
+    // bc <a></a> {{abc}}`);
+
+    // let r = compiler(`{{abc}}`);
+
+    // let r = compiler(`<div />`);
+
+    // let r = compiler(`<div>123 {{aa}} <span>{{fd}}</span></div>`);
+
+    let r = compiler(`<div class="ss"> fsfdf</div>`);
     console.log(r);
 
   </script>

@@ -36,6 +36,8 @@ var VueCompilerCore = (() => {
   __export(src_exports, {
     compiler: () => compiler
   });
+
+  // packages/compiler-core/src/parse.ts
   function createParserContext(template) {
     return {
       line: 1,
@@ -208,7 +210,7 @@ var VueCompilerCore = (() => {
     const context = createParserContext(template);
     let start = getCursor(context);
     let nodes = createRoot(parseChildren(context), getSelection(context, start));
-    console.log(nodes);
+    return nodes;
   }
   function createRoot(children, loc) {
     return {
@@ -239,8 +241,61 @@ var VueCompilerCore = (() => {
     });
     return nodes.filter(Boolean);
   }
+
+  // packages/compiler-core/src/transform.ts
+  function transformElement(node, context) {
+    console.log("111");
+  }
+  function transformText(node, context) {
+    console.log("222");
+  }
+  function transformExpression(node, context) {
+    console.log("333");
+  }
+  function createTransformContext(root) {
+    const context = {
+      currentNode: root,
+      parent: null,
+      helpers: /* @__PURE__ */ new Map(),
+      helper(name) {
+        const count = context.helpers.get(name) || 0;
+        context.helpers.set(name, count + 1);
+        return name;
+      },
+      nodeTransforms: [
+        transformElement,
+        transformText,
+        transformExpression
+      ]
+    };
+    return context;
+  }
+  function traverse(node, context) {
+    context.currentNode = node;
+    const transforms = context.nodeTransforms;
+    for (let i = 0; i < transforms.length; i++) {
+      transforms[i](node, context);
+      if (!context.currentNode)
+        return;
+    }
+    switch (node.type) {
+      case 1 /* ELEMENT */:
+      case 0 /* ROOT */:
+        for (let i = 0; i < node.children.length; i++) {
+          context.parent = node;
+          traverse(node.children[i], context);
+        }
+    }
+  }
+  function transform(ast) {
+    const context = createTransformContext(ast);
+    traverse(ast, context);
+  }
+
+  // packages/compiler-core/src/index.ts
   function compiler(template) {
     const ast = parse(template);
+    transform(ast);
     return ast;
   }
   return __toCommonJS(src_exports);

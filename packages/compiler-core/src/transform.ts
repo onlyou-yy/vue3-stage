@@ -1,17 +1,8 @@
 import { NodeTypes } from "./ast";
-
-function transformElement(node,context){
-  console.log("111")
-}
-
-function transformText(node,context){
-  console.log("222")
-}
-
-function transformExpression(node,context){
-  console.log("333")
-}
-
+import { TO_DISPLAY_STRING } from "./runtimeHelpers";
+import { transformElement } from "./transforms/transformElement";
+import { transformExpression } from "./transforms/transformExpression";
+import { transformText } from "./transforms/transformText";
 
 /**创建转化上下文  */
 function createTransformContext(root){
@@ -37,19 +28,33 @@ function createTransformContext(root){
 function traverse(node,context){
   context.currentNode = node;
   const transforms = context.nodeTransforms;
+  const exitFns = [];//退出函数列表
   for(let i = 0;i < transforms.length;i++){
-    transforms[i](node,context);//在执行的时候有可能会把这个node删除掉
+    let onExit = transforms[i](node,context);//在执行的时候有可能会把这个node删除掉
+    if(onExit) exitFns.push(onExit);
     //如果当前节点被删除就不用处理儿子了
     if(!context.currentNode) return;
   }
   //继续处理子节点，元素 和 根节点才有子节点
   switch(node.type){
+    case NodeTypes.INTERPOLATION:
+      // 对于表达式需要使用 toDisplayString 方法来处理
+      // {{aa}} -> _ctx.aa -> toDisplayString(_ctx.aa)
+      context.helper(TO_DISPLAY_STRING);
+      break;
     case NodeTypes.ELEMENT:
     case NodeTypes.ROOT:
       for(let i = 0;i < node.children.length;i++){
         context.parent = node;
         traverse(node.children[i],context);
       }
+  }
+  // context.currentNode 在进入递归函数的时候会改变，这里需要重置一下
+  context.currentNode = node;
+  // 倒序执行退出函数，先执行子再执行父的
+  let i = exitFns.length;
+  while(i--){
+    exitFns[i]();
   }
 }
 

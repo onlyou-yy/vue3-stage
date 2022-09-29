@@ -242,16 +242,41 @@ var VueCompilerCore = (() => {
     return nodes.filter(Boolean);
   }
 
-  // packages/compiler-core/src/transform.ts
+  // packages/compiler-core/src/runtimeHelpers.ts
+  var TO_DISPLAY_STRING = Symbol("toDisplayString");
+  var helperMap = {
+    [TO_DISPLAY_STRING]: "toDisplayString"
+  };
+
+  // packages/compiler-core/src/transforms/transformElement.ts
   function transformElement(node, context) {
-    console.log("111");
+    if (node.type === 1 /* ELEMENT */) {
+      console.log("in Element");
+      return () => {
+        console.log("out Element");
+      };
+    }
   }
-  function transformText(node, context) {
-    console.log("222");
-  }
+
+  // packages/compiler-core/src/transforms/transformExpression.ts
   function transformExpression(node, context) {
-    console.log("333");
+    if (node.type === 5 /* INTERPOLATION */) {
+      let content = node.content.content;
+      node.content.content = `_ctx.${content}`;
+    }
   }
+
+  // packages/compiler-core/src/transforms/transformText.ts
+  function transformText(node, context) {
+    if (node.type === 1 /* ELEMENT */ || node.type === 0 /* ROOT */) {
+      console.log("in Text");
+      return () => {
+        console.log("out Text");
+      };
+    }
+  }
+
+  // packages/compiler-core/src/transform.ts
   function createTransformContext(root) {
     const context = {
       currentNode: root,
@@ -273,18 +298,29 @@ var VueCompilerCore = (() => {
   function traverse(node, context) {
     context.currentNode = node;
     const transforms = context.nodeTransforms;
-    for (let i = 0; i < transforms.length; i++) {
-      transforms[i](node, context);
+    const exitFns = [];
+    for (let i2 = 0; i2 < transforms.length; i2++) {
+      let onExit = transforms[i2](node, context);
+      if (onExit)
+        exitFns.push(onExit);
       if (!context.currentNode)
         return;
     }
     switch (node.type) {
+      case 5 /* INTERPOLATION */:
+        context.helper(TO_DISPLAY_STRING);
+        break;
       case 1 /* ELEMENT */:
       case 0 /* ROOT */:
-        for (let i = 0; i < node.children.length; i++) {
+        for (let i2 = 0; i2 < node.children.length; i2++) {
           context.parent = node;
-          traverse(node.children[i], context);
+          traverse(node.children[i2], context);
         }
+    }
+    context.currentNode = node;
+    let i = exitFns.length;
+    while (i--) {
+      exitFns[i]();
     }
   }
   function transform(ast) {

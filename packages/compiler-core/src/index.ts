@@ -1,3 +1,4 @@
+import { generate } from "./codegen";
 import { parse } from "./parse";
 import { transform } from "./transform";
 
@@ -17,7 +18,5 @@ export function compiler(template){
 
 
   // //代码生成
-  // return generate(ast);//最终生成代码 和vue2一样
-
-  return ast;
+  return generate(ast);//最终生成代码 和vue2一样
 }

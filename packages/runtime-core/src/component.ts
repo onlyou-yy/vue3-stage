@@ -148,3 +148,8 @@ export function updateProps(prevProps,nextProps){
     }
   }
 }
+
+let compile;
+export function registerRuntimeCompiler(_compile) {
+  compile = _compile;
+}

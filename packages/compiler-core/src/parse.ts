@@ -259,7 +259,8 @@ function createRoot(children,loc){
   return {
     type:NodeTypes.ROOT,
     children,
-    loc
+    loc,
+    helpers: [],
   }
 }
 

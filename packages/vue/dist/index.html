@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="./vue.global.js"></script>
+  <script>
+    const { createApp,h, ref } = Vue;
+
+    const count = ref(0);
+
+    const HelloWorld = {
+      name: "HelloWorld",
+      setup() {},
+      // TODO 第一个小目标
+      // 可以在使用 template 只需要有一个插值表达式即
+      // 可以解析 tag 标签
+      // template: `
+      //   <div>hi {{msg}}</div>
+      //   需要编译成 render 函数
+      // `,
+      render() {
+        return h(
+          "div",
+          { tId: "helloWorld" },
+          `hello world: count: ${count.value}`
+        );
+      },
+    };
+
+    let App = {
+      name: "App",
+      setup() {},
+
+      render() {
+        return h("div", { tId: 1 }, [h("p", {}, "主页"), h(HelloWorld)]);
+      },
+    };
+
+    const rootContainer = document.querySelector("#root");
+    const m = createApp(App.render(),rootContainer)
+  </script>
+</body>
+</html>

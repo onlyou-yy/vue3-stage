@@ -58,10 +58,34 @@ function traverse(node,context){
   }
 }
 
+/**给根节点也添加上 codegen 所需要的数据 */
+function createRootCodegen(root: any, context: any) {
+  const { children } = root;
+
+  // 只支持有一个根节点
+  // 并且还是一个 single text node
+  const child = children[0];
+
+  // 如果是 element 类型的话 ， 那么我们需要把它的 codegenNode 赋值给 root
+  // root 其实是个空的什么数据都没有的节点
+  // 所以这里需要额外的处理 codegenNode
+  // codegenNode 的目的是专门为了 codegen 准备的  为的就是和 ast 的 node 分离开
+  if (child.type === NodeTypes.ELEMENT && child.codegenNode) {
+    const codegenNode = child.codegenNode;
+    root.codegenNode = codegenNode;
+  } else {
+    root.codegenNode = child;
+  }
+}
+
 /**转化/预处理 ast */
 export function transform(ast) {
   //创建转化上下文 
   const context = createTransformContext(ast);
   //遍历节点进行处理
   traverse(ast,context);
+  //给根节点也进行处理
+  createRootCodegen(ast, context);
+  //保存所有使用的 转化方法到根节点上
+  ast.helpers.push(...context.helpers.keys());
 }

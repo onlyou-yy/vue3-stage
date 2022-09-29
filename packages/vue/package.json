@@ -1,0 +1,14 @@
+{
+  "name": "@vue/core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "buildOptions":{
+    "name":"Vue",
+    "formats":[
+      "global",
+      "cjs",
+      "esm-bundler"
+    ]
+  }
+}

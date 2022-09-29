@@ -6,7 +6,8 @@
   "scripts": {
     "reactivity": "node scripts/dev.js reactivity -f global",
     "runtime:dom": "node scripts/dev.js runtime-dom -f global",
-    "compiler": "node scripts/dev.js compiler-core -f global"
+    "compiler": "node scripts/dev.js compiler-core -f global",
+    "vue": "node scripts/dev.js vue -f global"
   },
   "keywords": [],
   "author": "",

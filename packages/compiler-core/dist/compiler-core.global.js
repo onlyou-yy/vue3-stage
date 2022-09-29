@@ -37,6 +37,170 @@ var VueCompilerCore = (() => {
     compiler: () => compiler
   });
 
+  // packages/shared/src/index.ts
+  var isString = (val) => {
+    return typeof val === "string";
+  };
+  var isArray = Array.isArray;
+
+  // packages/compiler-core/src/runtimeHelpers.ts
+  var TO_DISPLAY_STRING = Symbol("toDisplayString");
+  var CREATE_ELEMENT_VNODE = Symbol("createElementVNode");
+  var helperMap = {
+    [TO_DISPLAY_STRING]: "toDisplayString",
+    [CREATE_ELEMENT_VNODE]: "createElementVNode"
+  };
+
+  // packages/compiler-core/src/ast.ts
+  function createVNodeCall(context, tag, props, children) {
+    if (context) {
+      context.helper(CREATE_ELEMENT_VNODE);
+    }
+    return {
+      type: 1 /* ELEMENT */,
+      tag,
+      props,
+      children
+    };
+  }
+
+  // packages/compiler-core/src/codegen.ts
+  function generate(ast, options = {}) {
+    const context = createCodegenContext(ast, options);
+    const { push, mode } = context;
+    if (mode === "module") {
+      genModulePreamble(ast, context);
+    } else {
+      genFunctionPreamble(ast, context);
+    }
+    const functionName = "render";
+    const args = ["_ctx"];
+    const signature = args.join(", ");
+    push(`function ${functionName}(${signature}) {`);
+    push("return ");
+    genNode(ast.codegenNode, context);
+    push("}");
+    return {
+      code: context.code
+    };
+  }
+  function genFunctionPreamble(ast, context) {
+    const { runtimeGlobalName, push, newline } = context;
+    const VueBinging = runtimeGlobalName;
+    const aliasHelper = (s) => `${helperMap[s]} : _${helperMap[s]}`;
+    if (ast.helpers.length > 0) {
+      push(
+        `
+        const { ${ast.helpers.map(aliasHelper).join(", ")}} = ${VueBinging} 
+
+      `
+      );
+    }
+    newline();
+    push(`return `);
+  }
+  function genNode(node, context) {
+    switch (node.type) {
+      case 5 /* INTERPOLATION */:
+        genInterpolation(node, context);
+        break;
+      case 4 /* SIMPLE_EXPRESSION */:
+        genExpression(node, context);
+        break;
+      case 1 /* ELEMENT */:
+        genElement(node, context);
+        break;
+      case 8 /* COMPOUND_EXPRESSION */:
+        genCompoundExpression(node, context);
+        break;
+      case 2 /* TEXT */:
+        genText(node, context);
+        break;
+      default:
+        break;
+    }
+  }
+  function genCompoundExpression(node, context) {
+    const { push } = context;
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i];
+      if (isString(child)) {
+        push(child);
+      } else {
+        genNode(child, context);
+      }
+    }
+  }
+  function genText(node, context) {
+    const { push } = context;
+    push(`'${node.content}'`);
+  }
+  function genElement(node, context) {
+    const { push, helper } = context;
+    const { tag, props, children } = node;
+    push(`${helper(CREATE_ELEMENT_VNODE)}(`);
+    genNodeList(genNullableArgs([tag, props, children]), context);
+    push(`)`);
+  }
+  function genNodeList(nodes, context) {
+    const { push } = context;
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (isString(node)) {
+        push(`${node}`);
+      } else {
+        genNode(node, context);
+      }
+      if (i < nodes.length - 1) {
+        push(", ");
+      }
+    }
+  }
+  function genNullableArgs(args) {
+    let i = args.length;
+    while (i--) {
+      if (args[i] != null)
+        break;
+    }
+    return args.slice(0, i + 1).map((arg) => arg || "null");
+  }
+  function genExpression(node, context) {
+    context.push(node.content, node);
+  }
+  function genInterpolation(node, context) {
+    const { push, helper } = context;
+    push(`${helper(TO_DISPLAY_STRING)}(`);
+    genNode(node.content, context);
+    push(")");
+  }
+  function genModulePreamble(ast, context) {
+    const { push, newline, runtimeModuleName } = context;
+    if (ast.helpers.length) {
+      const code = `import {${ast.helpers.map((s) => `${helperMap[s]} as _${helperMap[s]}`).join(", ")} } from ${JSON.stringify(runtimeModuleName)}`;
+      push(code);
+    }
+    newline();
+    push(`export `);
+  }
+  function createCodegenContext(ast, { runtimeModuleName = "vue", runtimeGlobalName = "Vue", mode = "function" }) {
+    const context = {
+      code: "",
+      mode,
+      runtimeModuleName,
+      runtimeGlobalName,
+      helper(key) {
+        return `_${helperMap[key]}`;
+      },
+      push(code) {
+        context.code += code;
+      },
+      newline() {
+        context.code += "\n";
+      }
+    };
+    return context;
+  }
+
   // packages/compiler-core/src/parse.ts
   function createParserContext(template) {
     return {
@@ -216,7 +380,8 @@ var VueCompilerCore = (() => {
     return {
       type: 0 /* ROOT */,
       children,
-      loc
+      loc,
+      helpers: []
     };
   }
   function parseChildren(context) {
@@ -242,18 +407,25 @@ var VueCompilerCore = (() => {
     return nodes.filter(Boolean);
   }
 
-  // packages/compiler-core/src/runtimeHelpers.ts
-  var TO_DISPLAY_STRING = Symbol("toDisplayString");
-  var helperMap = {
-    [TO_DISPLAY_STRING]: "toDisplayString"
-  };
-
   // packages/compiler-core/src/transforms/transformElement.ts
   function transformElement(node, context) {
     if (node.type === 1 /* ELEMENT */) {
-      console.log("in Element");
       return () => {
-        console.log("out Element");
+        const vnodeTag = `'${node.tag}'`;
+        const vnodeProps = node.props;
+        let vnodeChildren = node.children;
+        if (node.children.length > 0) {
+          if (node.children.length === 1) {
+            const child = node.children[0];
+            vnodeChildren = child;
+          }
+        }
+        node.codegenNode = createVNodeCall(
+          context,
+          vnodeTag,
+          vnodeProps,
+          vnodeChildren
+        );
       };
     }
   }
@@ -269,11 +441,37 @@ var VueCompilerCore = (() => {
   // packages/compiler-core/src/transforms/transformText.ts
   function transformText(node, context) {
     if (node.type === 1 /* ELEMENT */ || node.type === 0 /* ROOT */) {
-      console.log("in Text");
       return () => {
-        console.log("out Text");
+        const children = node.children;
+        let currentContainer;
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i];
+          if (isText(child)) {
+            for (let j = i + 1; j < children.length; j++) {
+              const next = children[j];
+              if (isText(next)) {
+                if (!currentContainer) {
+                  currentContainer = children[i] = {
+                    type: 8 /* COMPOUND_EXPRESSION */,
+                    loc: child.loc,
+                    children: [child]
+                  };
+                }
+                currentContainer.children.push(` + `, next);
+                children.splice(j, 1);
+                j--;
+              } else {
+                currentContainer = void 0;
+                break;
+              }
+            }
+          }
+        }
       };
     }
+  }
+  function isText(node) {
+    return node.type === 5 /* INTERPOLATION */ || node.type === 2 /* TEXT */;
   }
 
   // packages/compiler-core/src/transform.ts
@@ -323,16 +521,28 @@ var VueCompilerCore = (() => {
       exitFns[i]();
     }
   }
+  function createRootCodegen(root, context) {
+    const { children } = root;
+    const child = children[0];
+    if (child.type === 1 /* ELEMENT */ && child.codegenNode) {
+      const codegenNode = child.codegenNode;
+      root.codegenNode = codegenNode;
+    } else {
+      root.codegenNode = child;
+    }
+  }
   function transform(ast) {
     const context = createTransformContext(ast);
     traverse(ast, context);
+    createRootCodegen(ast, context);
+    ast.helpers.push(...context.helpers.keys());
   }
 
   // packages/compiler-core/src/index.ts
   function compiler(template) {
     const ast = parse(template);
     transform(ast);
-    return ast;
+    return generate(ast);
   }
   return __toCommonJS(src_exports);
 })();

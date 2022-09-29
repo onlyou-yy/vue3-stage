@@ -4,9 +4,14 @@ import { patchProp } from './patchProp';
 
 const renderOptions = Object.assign(nodeOps,{patchProp});//domAPI 属性 api
 
-export function render(vnode,container){
+let renderder;
+function ensureRenderer(){
   //在创建渲染器的时候传入渲染选项
-  createRenderder(renderOptions).render(vnode,container);
+  return renderder || createRenderder(renderOptions);
+}
+
+export const createApp = (vnode,container) => {
+  return ensureRenderer().render(vnode,container)
 }
 
 export * from "@vue/runtime-core";
